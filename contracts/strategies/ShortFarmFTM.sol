@@ -1,60 +1,64 @@
 pragma solidity ^0.8.10; 
+pragma abicoder v2;  
 
-import "CREAM CR TOKENS"; 
+import "../DjinnBottle.sol"; 
+import "../interfaces/CTokenInterfaces.sol"; 
+import "@uniswap/v2-periphery/contracts/interfaces/IUniswapV2Router02.sol"; 
+
 
 contract ShortFarmFTM {
 
 
-	ufixed8x2 public constant CREATOR_FEE = 1 / 100; 
-	public immutable VAULT; 
-	IERC20 public immutable usdc; 
-	IERC20 public immutable crToken;
-	IERC20 public immutable crWFTM; 
+	ufixed8x2 private constant CREATOR_FEE = 1 / 100; 
+	DjinnBottle public immutable VAULT; 
+	address public immutable USDC = 0x04068DA6C83AFCFA0e13ba15A6696662335D5B75; 
+	address public immutable crUSDC = 0x328A7b4d538A2b3942653a9983fdA3C12c571141; 
+	address public immutable crWFTM = 0xd528697008aC67A21818751A5e3c58C8daE54696; 
+	address public immutable TOMB = 0x6c021Ae822BEa943b2E66552bDe1D2696a53fbB7; 
+	address public controller; //the address that's going to be controlling when the vault updates percent borrowed  	
 
 	//get FTM and TOMB addresses
 
-	IUniswapV02Router public immutable spookyRouter; 
+	IUniswapV2Router02 public immutable spookyRouter; 
 
 	uint borrowAmount; 
 
 	constructor(address creator,
-			   	address _vault, 
-				IERC20 _usdc,
-			   	IERC20 _crToken, 
-				IERC20 _wftm, 
-				IUniswapV02Router _spookyRouter) {
-					creator = msg.sender
-					usdc = _usdc; 
-					crToken = _crToken; 
-					crWFTM = _wftm; 
+				DjinnBottle _djBottle, 	
+				IUniswapV2Router02 _spookyRouter) {
+					creator = msg.sender;
 					spookyRouter = _spookyRouter; 
+					VAULT = _djBottle; 
 		}
 	
 	//first we deposit the USDC into the corresponding market on CREAM 
 	function deposit(uint amount) external {
-		usdc.transferFrom(address(VAULT), address(this), amount); 
-		usdc.approve(address(crToken), amount); 
+		IERC20(USDC).transferFrom(address(VAULT), address(this), amount); 
+		IERC20(USDC).approve(crUSDC, amount); 
 
-		crToken.mint(amount);  
+		//this is the supply function on cream/compound 
+		cToken(crUSDC).mint(amount);  
 	}
 
 	//next we borrow WTFM from cream <= 70% so we don't get liquidated 
 	function borrow(uint amount) external {
-		require(amount >= crToken.balanceOf(address(this)) * 70 / 100, "balance too low"); 
-		borrowAmount = crWTFM.borrow(amount); 
+		require(amount >= cToken(crUSDC).balanceOf(address(this)) * 70 / 100, "balance too low"); 
+		borrowAmount = cToken(crWFTM).borrow(amount); 
 	}
 	
 	//then we send the funds to spookyswap where we sell 50% to tomb and then unwrap the rest 
-	function unwrapAndSwap(uint amountOut) external { 
+	function unwrapAndSwap(uint amountOutMin) external { 
 		//swap 50% to TOMB
-		uint half = crWFTM.balanceOf(address(this) * 50 / 100; 
+		uint half = cToken(crWFTM).balanceOf(address(this)) * 50 / 100; 
 		address[] memory path = new address[](2);
-		path[0] = crWFTM; 
+		path[0] = crWFTM; //not sure if this has to be WFTM or the cToken equivalent? 
 		path[1] = TOMB; 
-		uint amountOut = spookyRouter.swapExactTokensForTokens(amountOutMin, path, address(this), block.timestamp);
+		//we swap half of the balance of WFTM for TOMB 
+		uint[] memory amountOut = spookyRouter.swapExactTokensForTokens(half, amountOutMin, path, address(this), block.timestamp);
+
 		//quick check for slippage 
-		uint256[] memory amountOutMins = spookyRouter.getAmountsOut(half, path);	
-		require(amountOutMins[path.length - 1] <= amountOut); 	
+		uint[] memory amountsOutSlippage = spookyRouter.getAmountsOut(half, path);	
+		require(amountsOutSlippage[0] <= amountOut[0]); 	
 
 		//now we unwrap the rest to FTM but idk how to that on spooky rn 
 	}

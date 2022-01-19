@@ -12,9 +12,9 @@ contract DjinnBottle is ERC20 {
 	mapping(address => uint) private lastHarvest; 
 	IERC20 public usdc; 
 
-	address private admin; 
+	address private admin; 	
 
-	constructor(address admin, address _usdc) ERC20("Djinn Finance USDC Vault","djUSDC") {
+	constructor(address _usdc) ERC20("Djinn Finance USDC Vault","djUSDC") {
 		admin = msg.sender; 
 		usdc = IERC20(_usdc); 
 	}
