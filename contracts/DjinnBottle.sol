@@ -14,7 +14,7 @@ contract DjinnBottle is ERC20 {
 
 	address private admin; 	
 
-	constructor(address _usdc) ERC20("Djinn Finance USDC Vault","djUSDC") {
+	constructor( address _usdc) ERC20("Djinn Finance USDC Vault","djUSDC") {
 		admin = msg.sender; 
 		usdc = IERC20(_usdc); 
 	}
@@ -33,7 +33,7 @@ contract DjinnBottle is ERC20 {
 	}
 
 	function claim() external {
-		harvest(msg.sender); 
+		checkHarvest(msg.sender); 
 	}
 	
 	//get percentage of profits by balance of this erc20 token in wallet 

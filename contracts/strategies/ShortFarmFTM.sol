@@ -4,6 +4,7 @@ pragma abicoder v2;
 import "../DjinnBottle.sol"; 
 import "../interfaces/CTokenInterfaces.sol"; 
 import "@uniswap/v2-periphery/contracts/interfaces/IUniswapV2Router02.sol"; 
+import "../interfaces/IWFTM.sol";
 
 
 contract ShortFarmFTM {
@@ -15,8 +16,10 @@ contract ShortFarmFTM {
 	address public immutable crUSDC = 0x328A7b4d538A2b3942653a9983fdA3C12c571141; 
 	address public immutable crWFTM = 0xd528697008aC67A21818751A5e3c58C8daE54696; 
 	address public immutable TOMB = 0x6c021Ae822BEa943b2E66552bDe1D2696a53fbB7; 
+	address spookyAddress = 0xF491e7B69E4244ad4002BC14e878a34207E38c29; 
 	address public controller; //the address that's going to be controlling when the vault updates percent borrowed  	
-
+	
+	IWFTM private wftm; 
 	//get FTM and TOMB addresses
 
 	IUniswapV2Router02 public immutable spookyRouter; 
@@ -25,10 +28,12 @@ contract ShortFarmFTM {
 
 	constructor(address creator,
 				DjinnBottle _djBottle, 	
-				IUniswapV2Router02 _spookyRouter) {
+				IUniswapV2Router02 _spookyRouter, 
+				IWFTM _wftm) {
 					creator = msg.sender;
 					spookyRouter = _spookyRouter; 
 					VAULT = _djBottle; 
+					wftm = _wftm; 
 		}
 	
 	//first we deposit the USDC into the corresponding market on CREAM 
@@ -43,7 +48,7 @@ contract ShortFarmFTM {
 	//next we borrow WTFM from cream <= 70% so we don't get liquidated 
 	function borrow(uint amount) external {
 		require(amount >= cToken(crUSDC).balanceOf(address(this)) * 70 / 100, "balance too low"); 
-		borrowAmount = cToken(crWFTM).borrow(amount); 
+		borrowAmount = cToken(crWFTM).borrow(amount); //not sure if this returns crWFTM or WFTM (I think WFTM?) 
 	}
 	
 	//then we send the funds to spookyswap where we sell 50% to tomb and then unwrap the rest 
@@ -54,13 +59,28 @@ contract ShortFarmFTM {
 		path[0] = crWFTM; //not sure if this has to be WFTM or the cToken equivalent? 
 		path[1] = TOMB; 
 		//we swap half of the balance of WFTM for TOMB 
-		uint[] memory amountOut = spookyRouter.swapExactTokensForTokens(half, amountOutMin, path, address(this), block.timestamp);
+		spookyRouter.swapExactTokensForTokensSupportingFeeOnTransferTokens(
+			half,
+		   	amountOutMin,
+		   	path,
+		   	address(this),
+		   	block.timestamp
+		);
 
-		//quick check for slippage 
-		uint[] memory amountsOutSlippage = spookyRouter.getAmountsOut(half, path);	
-		require(amountsOutSlippage[0] <= amountOut[0]); 	
+		//to unwrap we need the IWETH9 interface 
+		wftm.withdraw(IERC20(crWFTM).balanceOf(address(this))); 
+	}
 
-		//now we unwrap the rest to FTM but idk how to that on spooky rn 
+	function getLPTokens() internal {
+			//we need to approve the router to spend our TOMB
+			uint tombAmount = IERC20(TOMB).balanceOf(address(this)); 
+			uint ftmAmount = address(this).balance; 	
+			IERC20(TOMB).approve(spookyAddress, tombAmount); 
+
+			//now we add liquidity 
+			//@params token, tokenAmount, minToken, minETH, to, deadline
+			//I think we should just be able to reuse the amounts since the router doesn't guarantee a price anyways 
+			spookyRouter.addLiquidityETH{value: msg.value}(TOMB, tombAmount, tombAmount, ftmAmount, address(this), block.timestamp); 
 	}
 
 }
