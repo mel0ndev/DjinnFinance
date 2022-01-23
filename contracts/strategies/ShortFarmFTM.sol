@@ -3,6 +3,8 @@ pragma abicoder v2;
 
 import "../DjinnBottleUSDC.sol"; 
 import "../interfaces/CTokenInterfaces.sol"; 
+import "../interfaces/ComptrollerInterface.sol";  
+import "../interfaces/IStdReference.sol"; 
 import "@uniswap/v2-periphery/contracts/interfaces/IUniswapV2Router02.sol"; 
 import "../interfaces/IMasterChef.sol"; 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol"; 
@@ -10,13 +12,12 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 contract ShortFarmFTM {
 
-
-	ufixed8x2 private constant CREATOR_FEE = 1 / 100; 
+	address public creator; 
+	uint private constant CREATOR_FEE = 100; 
 	DjinnBottleUSDC public immutable VAULT; 
 
 	//Cream Finance Contracts 
 	address public immutable crUSDC = 0x328A7b4d538A2b3942653a9983fdA3C12c571141; 
-	address public immutable crWFTM = 0xd528697008aC67A21818751A5e3c58C8daE54696; 
 
 	//Public Tokens
 	address public immutable USDC = 0x04068DA6C83AFCFA0e13ba15A6696662335D5B75; 
@@ -28,30 +29,37 @@ contract ShortFarmFTM {
 	address public immutable spookyFtmTombLP = 0x2A651563C9d3Af67aE0388a5c8F89b867038089e; 
 	address public immutable spookyAddress = 0xF491e7B69E4244ad4002BC14e878a34207E38c29;		
 
-	//Router Interface && Tomb Share Rewards Pool Interface 
+	//Contract Interfaces  
 	IUniswapV2Router02 public immutable spookyRouter; 
 	IMasterChef public immutable tsharePool; 
+	ComptrollerInterface public immutable comptroller; 
+	IStdReference public immutable priceOracle;
+	CERC20 public immutable crWFTM; 	
 
-	uint borrowAmount; 
 
-	constructor(address creator,
-				DjinnBottleUSDC _djBottle, 	
+	constructor(DjinnBottleUSDC _djBottle, 	
 				IUniswapV2Router02 _spookyRouter, 
-				IMasterChef _tsharePool) {
-					creator = msg.sender;
+				IMasterChef _tsharePool, 
+				ComptrollerInterface _comptroller, 
+				IStdReference _priceOracle,
+				CERC20 _cERC20) {
+					address creator = msg.sender;
 					spookyRouter = _spookyRouter; 
 					VAULT = _djBottle; 
-					tsharePool = _tsharePool; 
-		}
+					tsharePool = _tsharePool;
+					comptroller = _comptroller;  
+					priceOracle = _priceOracle; 
+					crWFTM = _cERC20; 
+				}
 	
 	//automate opening a position
 	//designed for single user ie. user opens via vault contract 	
-	function open(uint amount) external { //make sure to pass msg.value when opening 
-		deposit(amount); 
-		borrow(); 
-		swap(); //swap half of bal to TOMB and unwrap the rest to FTM 
-		getLPTokens(); //get FTM-TOMB LP tokens 	
-		depositLPGetTShare(); //deposit LP tokens on TOMB to earn TSHARE
+	function open(uint amount) external {
+		supply(amount); 	
+		borrow(amount); //same amount in USDC to keep track of how many tokens we have supplied 
+		//swap(); //swap half of bal to TOMB and unwrap the rest to FTM 
+		//getLPTokens(); //get FTM-TOMB LP tokens 	
+		//depositLPGetTShare(); //deposit LP tokens on TOMB to earn TSHARE
 	}
 
 	//automate the harvest 
@@ -75,21 +83,32 @@ contract ShortFarmFTM {
 		//send back to vault to allow for withdraw 
 	}
 	
-	//first we deposit the USDC into the corresponding market on CREAM 
-	function deposit(uint amount) internal {
-		IERC20(USDC).transferFrom(address(VAULT), address(this), amount); 
-		IERC20(USDC).approve(crUSDC, amount); 
-
-		//this is the supply function on cream/compound 
-		cToken(crUSDC).mint(amount);  
-	}
-
-	//next we borrow WTFM from cream <= 70% so we don't get liquidated
+	//next we borrow WTFM from cream <= 75% so we don't get liquidated
 	//cream allows for 75% collateral on deposits of USDC, but this 75% is on the 75% 
 	//so we are effectively borrowing ~55% of our deposit amount, which leaves room to the upside  	
-	function borrow() internal {
-		uint amount = IERC20(crUSDC).balanceOf(address(this)) * 75 / 100; 
-		cToken(crWFTM).borrow(amount); //returns WFTM to msg.sender  
+	function supply(uint amount) internal {
+		IERC20(USDC).approve(crUSDC, amount);  
+		CERC20(crUSDC).mint(amount); 
+	}
+	
+	function borrow(uint amount) internal {
+		address[] memory cTokenSupplied = new address[](1); 
+		cTokenSupplied[0] = crUSDC; //cToken address
+		uint[] memory errors = comptroller.enterMarkets(cTokenSupplied); 
+		require(errors[0] == 0, "market failed");  
+		
+		//get max borrow 
+		(, uint borrowAmount,) = getBorrowAmount(); //borrow amount returns the token amount scaled up by 1e18 @ 75% of our max borrow
+		require(crWFTM.borrow(borrowAmount) == 0,"borrow failed"); //1 wFT 
+	}
+
+	function getBorrowAmount() public view returns(uint liquidity, uint borrowAmount, uint price) {
+		(, uint liquidity,) = comptroller.getAccountLiquidity(address(this)); 
+		IStdReference.ReferenceData memory data = priceOracle.getReferenceData("FTM", "USDC"); 
+		 price = data.rate; 
+		uint maxTokenBorrow = (liquidity * 10**18) / price; //wFTM has 18 decimals   	
+		borrowAmount = (maxTokenBorrow * 75) / 100; 
+		return (liquidity, borrowAmount, price); 
 	}
 
 	//where amount is the percentage of LP tokens relative to the callers % ownership of the vault 
@@ -124,7 +143,7 @@ contract ShortFarmFTM {
 
 		uint amountToRepay = amounts[0] + amountWftm; 
 		//now we can repay our users borrow 
-		cToken(crWFTM).repayBorrow(amountToRepay); 
+		CERC20(crWFTM).repayBorrow(amountToRepay); 
 	}
 	
 	//then we send the funds to spookyswap where we sell 50% to tomb and then unwrap the rest 
@@ -147,6 +166,7 @@ contract ShortFarmFTM {
 
 	function sellAndSwap() internal {
 		uint half = IERC20(TSHARE).balanceOf(address(this)) * 50 / 100; 
+		uint fee = half * CREATOR_FEE; 
 		address[] memory pathToTomb = new address[](3); 
 		pathToTomb[0] = TSHARE;  
 		pathToTomb[1] = WFTM; 
@@ -190,6 +210,8 @@ contract ShortFarmFTM {
 		//they are both distributed from the same contract tho, and they don't say which is which anywhere?? cringe. 
 		//after this deposit the contract should be earning tshares as a reward 
 		IMasterChef(tsharePool).deposit(0, lpTokenBalance); //I think the FTM-TOMB pool ID is 0 tho 
-	}	
+	}
 
+	receive() external payable{} 
+	
 } 

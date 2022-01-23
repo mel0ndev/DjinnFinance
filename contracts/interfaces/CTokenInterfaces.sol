@@ -1,21 +1,48 @@
-// SPDX-License-Identifier: MIT
+// SPDX-License-Identifier: AGPL-3.0-only
+pragma solidity 0.8.10;
 
-pragma solidity >=0.5.17;
+import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
-interface cToken {
-    function mint(uint256 mintAmount) external returns (uint256);
+import {InterestRateModel} from "./InterestRateModel.sol";
 
-    function redeem(uint256 redeemTokens) external returns (uint256);
+abstract contract CERC20 is ERC20 {
+    function mint(uint256) external virtual returns (uint256);
 
-    function redeemUnderlying(uint256 redeemAmount) external returns (uint256);
+    function borrow(uint256) external virtual returns (uint256);
 
-    function borrow(uint256 borrowAmount) external returns (uint256);
+    function underlying() external view virtual returns (ERC20);
 
-    function repayBorrow(uint256 repayAmount) external returns (uint256);
+    function totalBorrows() external view virtual returns (uint256);
 
-    function exchangeRateStored() external view returns (uint256);
+    function totalFuseFees() external view virtual returns (uint256);
 
-    function balanceOf(address _owner) external view returns (uint256);
+    function repayBorrow(uint256) external virtual returns (uint256);
 
-    function underlying() external view returns (address);
+    function totalReserves() external view virtual returns (uint256);
+
+    function exchangeRateCurrent() external virtual returns (uint256);
+
+    function totalAdminFees() external view virtual returns (uint256);
+
+    function fuseFeeMantissa() external view virtual returns (uint256);
+
+    function adminFeeMantissa() external view virtual returns (uint256);
+
+    function exchangeRateStored() external view virtual returns (uint256);
+
+    function accrualBlockNumber() external view virtual returns (uint256);
+
+    function redeemUnderlying(uint256) external virtual returns (uint256);
+
+    function balanceOfUnderlying(address) external virtual returns (uint256);
+
+    function reserveFactorMantissa() external view virtual returns (uint256);
+
+    function borrowBalanceCurrent(address) external virtual returns (uint256);
+
+    function interestRateModel() external view virtual returns (InterestRateModel);
+
+    function initialExchangeRateMantissa() external view virtual returns (uint256);
+
+    function repayBorrowBehalf(address, uint256) external virtual returns (uint256);
 }

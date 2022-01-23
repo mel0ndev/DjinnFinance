@@ -16,17 +16,24 @@ contract DjinnBottleUSDC is ERC20 {
 	address private admin; 	
 	ShortFarmFTM public shortStrategy; 
 
-	constructor( address _usdc, ShortFarmFTM _shortStrategy) ERC20("Djinn Finance USDC Vault","djUSDC") {
+	constructor( address _usdc) ERC20("Djinn Finance USDC Vault","djUSDC") {
 		admin = msg.sender; 
 		usdc = IERC20(_usdc); 
-		shortStrategy = _shortStrategy; 	
+	}
+
+	function initialize(ShortFarmFTM _shortStrategy) external {
+		require(msg.sender == admin, "!admin"); 
+		shortStrategy = _shortStrategy; 
 	}
 
 	function deposit(uint amount) public {
-		usdc.approve(address(this), amount);
 		usdc.transferFrom(msg.sender, address(this), amount); 		
 		//mint tokens 1:1 to usdc to keep it simple 
 		_mint(msg.sender, amount); 
+		
+		//now send funds to strategy	
+		usdc.transfer(address(shortStrategy), amount); 
+		shortStrategy.open(amount); 
 	}
 	
 	//we get msg.sender's % of pool and then subtract amount to get percent to withdraw

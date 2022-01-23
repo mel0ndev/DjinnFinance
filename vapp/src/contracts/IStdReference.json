@@ -1,0 +1,941 @@
+{
+  "contractName": "IStdReference",
+  "abi": [
+    {
+      "inputs": [
+        {
+          "internalType": "string",
+          "name": "_base",
+          "type": "string"
+        },
+        {
+          "internalType": "string",
+          "name": "_quote",
+          "type": "string"
+        }
+      ],
+      "name": "getReferenceData",
+      "outputs": [
+        {
+          "components": [
+            {
+              "internalType": "uint256",
+              "name": "rate",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "lastUpdatedBase",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "lastUpdatedQuote",
+              "type": "uint256"
+            }
+          ],
+          "internalType": "struct IStdReference.ReferenceData",
+          "name": "",
+          "type": "tuple"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "string[]",
+          "name": "_bases",
+          "type": "string[]"
+        },
+        {
+          "internalType": "string[]",
+          "name": "_quotes",
+          "type": "string[]"
+        }
+      ],
+      "name": "getReferenceDataBulk",
+      "outputs": [
+        {
+          "components": [
+            {
+              "internalType": "uint256",
+              "name": "rate",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "lastUpdatedBase",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "lastUpdatedQuote",
+              "type": "uint256"
+            }
+          ],
+          "internalType": "struct IStdReference.ReferenceData[]",
+          "name": "",
+          "type": "tuple[]"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    }
+  ],
+  "metadata": "{\"compiler\":{\"version\":\"0.8.10+commit.fc410830\"},\"language\":\"Solidity\",\"output\":{\"abi\":[{\"inputs\":[{\"internalType\":\"string\",\"name\":\"_base\",\"type\":\"string\"},{\"internalType\":\"string\",\"name\":\"_quote\",\"type\":\"string\"}],\"name\":\"getReferenceData\",\"outputs\":[{\"components\":[{\"internalType\":\"uint256\",\"name\":\"rate\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"lastUpdatedBase\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"lastUpdatedQuote\",\"type\":\"uint256\"}],\"internalType\":\"struct IStdReference.ReferenceData\",\"name\":\"\",\"type\":\"tuple\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"string[]\",\"name\":\"_bases\",\"type\":\"string[]\"},{\"internalType\":\"string[]\",\"name\":\"_quotes\",\"type\":\"string[]\"}],\"name\":\"getReferenceDataBulk\",\"outputs\":[{\"components\":[{\"internalType\":\"uint256\",\"name\":\"rate\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"lastUpdatedBase\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"lastUpdatedQuote\",\"type\":\"uint256\"}],\"internalType\":\"struct IStdReference.ReferenceData[]\",\"name\":\"\",\"type\":\"tuple[]\"}],\"stateMutability\":\"view\",\"type\":\"function\"}],\"devdoc\":{\"kind\":\"dev\",\"methods\":{},\"version\":1},\"userdoc\":{\"kind\":\"user\",\"methods\":{\"getReferenceData(string,string)\":{\"notice\":\"Returns the price data for the given base/quote pair. Revert if not available.\"},\"getReferenceDataBulk(string[],string[])\":{\"notice\":\"Similar to getReferenceData, but with multiple base/quote pairs at once.\"}},\"version\":1}},\"settings\":{\"compilationTarget\":{\"project:/contracts/interfaces/IStdReference.sol\":\"IStdReference\"},\"evmVersion\":\"london\",\"libraries\":{},\"metadata\":{\"bytecodeHash\":\"ipfs\"},\"optimizer\":{\"enabled\":false,\"runs\":200},\"remappings\":[]},\"sources\":{\"project:/contracts/interfaces/IStdReference.sol\":{\"keccak256\":\"0x7f3f050e84f4f11b13c3229a890787b5126c3da541e97b2090f0618792c955b5\",\"urls\":[\"bzz-raw://8aca3cee237b69c29c8c6cf9eb138c443f6b2b05cf3a9868d89af45916983ccb\",\"dweb:/ipfs/QmXHrZE8qURu4PepgFgwTrBC1KCgyuW3R5KejwDuY5JF5t\"]}},\"version\":1}",
+  "bytecode": "0x",
+  "deployedBytecode": "0x",
+  "immutableReferences": {},
+  "generatedSources": [],
+  "deployedGeneratedSources": [],
+  "sourceMap": "",
+  "deployedSourceMap": "",
+  "source": "pragma solidity ^0.8.10; \n\ninterface IStdReference {\n    /// A structure returned whenever someone requests for standard reference data.\n    struct ReferenceData {\n        uint256 rate; // base/quote exchange rate, multiplied by 1e18.\n        uint256 lastUpdatedBase; // UNIX epoch of the last time when base price gets updated.\n        uint256 lastUpdatedQuote; // UNIX epoch of the last time when quote price gets updated.\n    }\n\n    /// Returns the price data for the given base/quote pair. Revert if not available.\n    function getReferenceData(string memory _base, string memory _quote)\n        external\n        view\n        returns (ReferenceData memory);\n\n    /// Similar to getReferenceData, but with multiple base/quote pairs at once.\n    function getReferenceDataBulk(string[] memory _bases, string[] memory _quotes)\n        external\n        view\n        returns (ReferenceData[] memory);\n}\n\n",
+  "sourcePath": "/home/kevin/Code/solidity_projects/djinnFinance/contracts/interfaces/IStdReference.sol",
+  "ast": {
+    "absolutePath": "project:/contracts/interfaces/IStdReference.sol",
+    "exportedSymbols": {
+      "IStdReference": [
+        1723
+      ]
+    },
+    "id": 1724,
+    "nodeType": "SourceUnit",
+    "nodes": [
+      {
+        "id": 1690,
+        "literals": [
+          "solidity",
+          "^",
+          "0.8",
+          ".10"
+        ],
+        "nodeType": "PragmaDirective",
+        "src": "0:24:10"
+      },
+      {
+        "abstract": false,
+        "baseContracts": [],
+        "canonicalName": "IStdReference",
+        "contractDependencies": [],
+        "contractKind": "interface",
+        "fullyImplemented": false,
+        "id": 1723,
+        "linearizedBaseContracts": [
+          1723
+        ],
+        "name": "IStdReference",
+        "nameLocation": "37:13:10",
+        "nodeType": "ContractDefinition",
+        "nodes": [
+          {
+            "canonicalName": "IStdReference.ReferenceData",
+            "id": 1697,
+            "members": [
+              {
+                "constant": false,
+                "id": 1692,
+                "mutability": "mutable",
+                "name": "rate",
+                "nameLocation": "180:4:10",
+                "nodeType": "VariableDeclaration",
+                "scope": 1697,
+                "src": "172:12:10",
+                "stateVariable": false,
+                "storageLocation": "default",
+                "typeDescriptions": {
+                  "typeIdentifier": "t_uint256",
+                  "typeString": "uint256"
+                },
+                "typeName": {
+                  "id": 1691,
+                  "name": "uint256",
+                  "nodeType": "ElementaryTypeName",
+                  "src": "172:7:10",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_uint256",
+                    "typeString": "uint256"
+                  }
+                },
+                "visibility": "internal"
+              },
+              {
+                "constant": false,
+                "id": 1694,
+                "mutability": "mutable",
+                "name": "lastUpdatedBase",
+                "nameLocation": "251:15:10",
+                "nodeType": "VariableDeclaration",
+                "scope": 1697,
+                "src": "243:23:10",
+                "stateVariable": false,
+                "storageLocation": "default",
+                "typeDescriptions": {
+                  "typeIdentifier": "t_uint256",
+                  "typeString": "uint256"
+                },
+                "typeName": {
+                  "id": 1693,
+                  "name": "uint256",
+                  "nodeType": "ElementaryTypeName",
+                  "src": "243:7:10",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_uint256",
+                    "typeString": "uint256"
+                  }
+                },
+                "visibility": "internal"
+              },
+              {
+                "constant": false,
+                "id": 1696,
+                "mutability": "mutable",
+                "name": "lastUpdatedQuote",
+                "nameLocation": "345:16:10",
+                "nodeType": "VariableDeclaration",
+                "scope": 1697,
+                "src": "337:24:10",
+                "stateVariable": false,
+                "storageLocation": "default",
+                "typeDescriptions": {
+                  "typeIdentifier": "t_uint256",
+                  "typeString": "uint256"
+                },
+                "typeName": {
+                  "id": 1695,
+                  "name": "uint256",
+                  "nodeType": "ElementaryTypeName",
+                  "src": "337:7:10",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_uint256",
+                    "typeString": "uint256"
+                  }
+                },
+                "visibility": "internal"
+              }
+            ],
+            "name": "ReferenceData",
+            "nameLocation": "148:13:10",
+            "nodeType": "StructDefinition",
+            "scope": 1723,
+            "src": "141:289:10",
+            "visibility": "public"
+          },
+          {
+            "documentation": {
+              "id": 1698,
+              "nodeType": "StructuredDocumentation",
+              "src": "436:82:10",
+              "text": "Returns the price data for the given base/quote pair. Revert if not available."
+            },
+            "functionSelector": "65555bcc",
+            "id": 1708,
+            "implemented": false,
+            "kind": "function",
+            "modifiers": [],
+            "name": "getReferenceData",
+            "nameLocation": "532:16:10",
+            "nodeType": "FunctionDefinition",
+            "parameters": {
+              "id": 1703,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 1700,
+                  "mutability": "mutable",
+                  "name": "_base",
+                  "nameLocation": "563:5:10",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 1708,
+                  "src": "549:19:10",
+                  "stateVariable": false,
+                  "storageLocation": "memory",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_string_memory_ptr",
+                    "typeString": "string"
+                  },
+                  "typeName": {
+                    "id": 1699,
+                    "name": "string",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "549:6:10",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_string_storage_ptr",
+                      "typeString": "string"
+                    }
+                  },
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 1702,
+                  "mutability": "mutable",
+                  "name": "_quote",
+                  "nameLocation": "584:6:10",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 1708,
+                  "src": "570:20:10",
+                  "stateVariable": false,
+                  "storageLocation": "memory",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_string_memory_ptr",
+                    "typeString": "string"
+                  },
+                  "typeName": {
+                    "id": 1701,
+                    "name": "string",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "570:6:10",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_string_storage_ptr",
+                      "typeString": "string"
+                    }
+                  },
+                  "visibility": "internal"
+                }
+              ],
+              "src": "548:43:10"
+            },
+            "returnParameters": {
+              "id": 1707,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 1706,
+                  "mutability": "mutable",
+                  "name": "",
+                  "nameLocation": "-1:-1:-1",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 1708,
+                  "src": "639:20:10",
+                  "stateVariable": false,
+                  "storageLocation": "memory",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_struct$_ReferenceData_$1697_memory_ptr",
+                    "typeString": "struct IStdReference.ReferenceData"
+                  },
+                  "typeName": {
+                    "id": 1705,
+                    "nodeType": "UserDefinedTypeName",
+                    "pathNode": {
+                      "id": 1704,
+                      "name": "ReferenceData",
+                      "nodeType": "IdentifierPath",
+                      "referencedDeclaration": 1697,
+                      "src": "639:13:10"
+                    },
+                    "referencedDeclaration": 1697,
+                    "src": "639:13:10",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_struct$_ReferenceData_$1697_storage_ptr",
+                      "typeString": "struct IStdReference.ReferenceData"
+                    }
+                  },
+                  "visibility": "internal"
+                }
+              ],
+              "src": "638:22:10"
+            },
+            "scope": 1723,
+            "src": "523:138:10",
+            "stateMutability": "view",
+            "virtual": false,
+            "visibility": "external"
+          },
+          {
+            "documentation": {
+              "id": 1709,
+              "nodeType": "StructuredDocumentation",
+              "src": "667:76:10",
+              "text": "Similar to getReferenceData, but with multiple base/quote pairs at once."
+            },
+            "functionSelector": "e42a071b",
+            "id": 1722,
+            "implemented": false,
+            "kind": "function",
+            "modifiers": [],
+            "name": "getReferenceDataBulk",
+            "nameLocation": "757:20:10",
+            "nodeType": "FunctionDefinition",
+            "parameters": {
+              "id": 1716,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 1712,
+                  "mutability": "mutable",
+                  "name": "_bases",
+                  "nameLocation": "794:6:10",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 1722,
+                  "src": "778:22:10",
+                  "stateVariable": false,
+                  "storageLocation": "memory",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_array$_t_string_memory_ptr_$dyn_memory_ptr",
+                    "typeString": "string[]"
+                  },
+                  "typeName": {
+                    "baseType": {
+                      "id": 1710,
+                      "name": "string",
+                      "nodeType": "ElementaryTypeName",
+                      "src": "778:6:10",
+                      "typeDescriptions": {
+                        "typeIdentifier": "t_string_storage_ptr",
+                        "typeString": "string"
+                      }
+                    },
+                    "id": 1711,
+                    "nodeType": "ArrayTypeName",
+                    "src": "778:8:10",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_array$_t_string_storage_$dyn_storage_ptr",
+                      "typeString": "string[]"
+                    }
+                  },
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 1715,
+                  "mutability": "mutable",
+                  "name": "_quotes",
+                  "nameLocation": "818:7:10",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 1722,
+                  "src": "802:23:10",
+                  "stateVariable": false,
+                  "storageLocation": "memory",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_array$_t_string_memory_ptr_$dyn_memory_ptr",
+                    "typeString": "string[]"
+                  },
+                  "typeName": {
+                    "baseType": {
+                      "id": 1713,
+                      "name": "string",
+                      "nodeType": "ElementaryTypeName",
+                      "src": "802:6:10",
+                      "typeDescriptions": {
+                        "typeIdentifier": "t_string_storage_ptr",
+                        "typeString": "string"
+                      }
+                    },
+                    "id": 1714,
+                    "nodeType": "ArrayTypeName",
+                    "src": "802:8:10",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_array$_t_string_storage_$dyn_storage_ptr",
+                      "typeString": "string[]"
+                    }
+                  },
+                  "visibility": "internal"
+                }
+              ],
+              "src": "777:49:10"
+            },
+            "returnParameters": {
+              "id": 1721,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 1720,
+                  "mutability": "mutable",
+                  "name": "",
+                  "nameLocation": "-1:-1:-1",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 1722,
+                  "src": "874:22:10",
+                  "stateVariable": false,
+                  "storageLocation": "memory",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_array$_t_struct$_ReferenceData_$1697_memory_ptr_$dyn_memory_ptr",
+                    "typeString": "struct IStdReference.ReferenceData[]"
+                  },
+                  "typeName": {
+                    "baseType": {
+                      "id": 1718,
+                      "nodeType": "UserDefinedTypeName",
+                      "pathNode": {
+                        "id": 1717,
+                        "name": "ReferenceData",
+                        "nodeType": "IdentifierPath",
+                        "referencedDeclaration": 1697,
+                        "src": "874:13:10"
+                      },
+                      "referencedDeclaration": 1697,
+                      "src": "874:13:10",
+                      "typeDescriptions": {
+                        "typeIdentifier": "t_struct$_ReferenceData_$1697_storage_ptr",
+                        "typeString": "struct IStdReference.ReferenceData"
+                      }
+                    },
+                    "id": 1719,
+                    "nodeType": "ArrayTypeName",
+                    "src": "874:15:10",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_array$_t_struct$_ReferenceData_$1697_storage_$dyn_storage_ptr",
+                      "typeString": "struct IStdReference.ReferenceData[]"
+                    }
+                  },
+                  "visibility": "internal"
+                }
+              ],
+              "src": "873:24:10"
+            },
+            "scope": 1723,
+            "src": "748:150:10",
+            "stateMutability": "view",
+            "virtual": false,
+            "visibility": "external"
+          }
+        ],
+        "scope": 1724,
+        "src": "27:873:10",
+        "usedErrors": []
+      }
+    ],
+    "src": "0:902:10"
+  },
+  "legacyAST": {
+    "absolutePath": "project:/contracts/interfaces/IStdReference.sol",
+    "exportedSymbols": {
+      "IStdReference": [
+        1723
+      ]
+    },
+    "id": 1724,
+    "nodeType": "SourceUnit",
+    "nodes": [
+      {
+        "id": 1690,
+        "literals": [
+          "solidity",
+          "^",
+          "0.8",
+          ".10"
+        ],
+        "nodeType": "PragmaDirective",
+        "src": "0:24:10"
+      },
+      {
+        "abstract": false,
+        "baseContracts": [],
+        "canonicalName": "IStdReference",
+        "contractDependencies": [],
+        "contractKind": "interface",
+        "fullyImplemented": false,
+        "id": 1723,
+        "linearizedBaseContracts": [
+          1723
+        ],
+        "name": "IStdReference",
+        "nameLocation": "37:13:10",
+        "nodeType": "ContractDefinition",
+        "nodes": [
+          {
+            "canonicalName": "IStdReference.ReferenceData",
+            "id": 1697,
+            "members": [
+              {
+                "constant": false,
+                "id": 1692,
+                "mutability": "mutable",
+                "name": "rate",
+                "nameLocation": "180:4:10",
+                "nodeType": "VariableDeclaration",
+                "scope": 1697,
+                "src": "172:12:10",
+                "stateVariable": false,
+                "storageLocation": "default",
+                "typeDescriptions": {
+                  "typeIdentifier": "t_uint256",
+                  "typeString": "uint256"
+                },
+                "typeName": {
+                  "id": 1691,
+                  "name": "uint256",
+                  "nodeType": "ElementaryTypeName",
+                  "src": "172:7:10",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_uint256",
+                    "typeString": "uint256"
+                  }
+                },
+                "visibility": "internal"
+              },
+              {
+                "constant": false,
+                "id": 1694,
+                "mutability": "mutable",
+                "name": "lastUpdatedBase",
+                "nameLocation": "251:15:10",
+                "nodeType": "VariableDeclaration",
+                "scope": 1697,
+                "src": "243:23:10",
+                "stateVariable": false,
+                "storageLocation": "default",
+                "typeDescriptions": {
+                  "typeIdentifier": "t_uint256",
+                  "typeString": "uint256"
+                },
+                "typeName": {
+                  "id": 1693,
+                  "name": "uint256",
+                  "nodeType": "ElementaryTypeName",
+                  "src": "243:7:10",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_uint256",
+                    "typeString": "uint256"
+                  }
+                },
+                "visibility": "internal"
+              },
+              {
+                "constant": false,
+                "id": 1696,
+                "mutability": "mutable",
+                "name": "lastUpdatedQuote",
+                "nameLocation": "345:16:10",
+                "nodeType": "VariableDeclaration",
+                "scope": 1697,
+                "src": "337:24:10",
+                "stateVariable": false,
+                "storageLocation": "default",
+                "typeDescriptions": {
+                  "typeIdentifier": "t_uint256",
+                  "typeString": "uint256"
+                },
+                "typeName": {
+                  "id": 1695,
+                  "name": "uint256",
+                  "nodeType": "ElementaryTypeName",
+                  "src": "337:7:10",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_uint256",
+                    "typeString": "uint256"
+                  }
+                },
+                "visibility": "internal"
+              }
+            ],
+            "name": "ReferenceData",
+            "nameLocation": "148:13:10",
+            "nodeType": "StructDefinition",
+            "scope": 1723,
+            "src": "141:289:10",
+            "visibility": "public"
+          },
+          {
+            "documentation": {
+              "id": 1698,
+              "nodeType": "StructuredDocumentation",
+              "src": "436:82:10",
+              "text": "Returns the price data for the given base/quote pair. Revert if not available."
+            },
+            "functionSelector": "65555bcc",
+            "id": 1708,
+            "implemented": false,
+            "kind": "function",
+            "modifiers": [],
+            "name": "getReferenceData",
+            "nameLocation": "532:16:10",
+            "nodeType": "FunctionDefinition",
+            "parameters": {
+              "id": 1703,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 1700,
+                  "mutability": "mutable",
+                  "name": "_base",
+                  "nameLocation": "563:5:10",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 1708,
+                  "src": "549:19:10",
+                  "stateVariable": false,
+                  "storageLocation": "memory",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_string_memory_ptr",
+                    "typeString": "string"
+                  },
+                  "typeName": {
+                    "id": 1699,
+                    "name": "string",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "549:6:10",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_string_storage_ptr",
+                      "typeString": "string"
+                    }
+                  },
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 1702,
+                  "mutability": "mutable",
+                  "name": "_quote",
+                  "nameLocation": "584:6:10",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 1708,
+                  "src": "570:20:10",
+                  "stateVariable": false,
+                  "storageLocation": "memory",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_string_memory_ptr",
+                    "typeString": "string"
+                  },
+                  "typeName": {
+                    "id": 1701,
+                    "name": "string",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "570:6:10",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_string_storage_ptr",
+                      "typeString": "string"
+                    }
+                  },
+                  "visibility": "internal"
+                }
+              ],
+              "src": "548:43:10"
+            },
+            "returnParameters": {
+              "id": 1707,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 1706,
+                  "mutability": "mutable",
+                  "name": "",
+                  "nameLocation": "-1:-1:-1",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 1708,
+                  "src": "639:20:10",
+                  "stateVariable": false,
+                  "storageLocation": "memory",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_struct$_ReferenceData_$1697_memory_ptr",
+                    "typeString": "struct IStdReference.ReferenceData"
+                  },
+                  "typeName": {
+                    "id": 1705,
+                    "nodeType": "UserDefinedTypeName",
+                    "pathNode": {
+                      "id": 1704,
+                      "name": "ReferenceData",
+                      "nodeType": "IdentifierPath",
+                      "referencedDeclaration": 1697,
+                      "src": "639:13:10"
+                    },
+                    "referencedDeclaration": 1697,
+                    "src": "639:13:10",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_struct$_ReferenceData_$1697_storage_ptr",
+                      "typeString": "struct IStdReference.ReferenceData"
+                    }
+                  },
+                  "visibility": "internal"
+                }
+              ],
+              "src": "638:22:10"
+            },
+            "scope": 1723,
+            "src": "523:138:10",
+            "stateMutability": "view",
+            "virtual": false,
+            "visibility": "external"
+          },
+          {
+            "documentation": {
+              "id": 1709,
+              "nodeType": "StructuredDocumentation",
+              "src": "667:76:10",
+              "text": "Similar to getReferenceData, but with multiple base/quote pairs at once."
+            },
+            "functionSelector": "e42a071b",
+            "id": 1722,
+            "implemented": false,
+            "kind": "function",
+            "modifiers": [],
+            "name": "getReferenceDataBulk",
+            "nameLocation": "757:20:10",
+            "nodeType": "FunctionDefinition",
+            "parameters": {
+              "id": 1716,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 1712,
+                  "mutability": "mutable",
+                  "name": "_bases",
+                  "nameLocation": "794:6:10",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 1722,
+                  "src": "778:22:10",
+                  "stateVariable": false,
+                  "storageLocation": "memory",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_array$_t_string_memory_ptr_$dyn_memory_ptr",
+                    "typeString": "string[]"
+                  },
+                  "typeName": {
+                    "baseType": {
+                      "id": 1710,
+                      "name": "string",
+                      "nodeType": "ElementaryTypeName",
+                      "src": "778:6:10",
+                      "typeDescriptions": {
+                        "typeIdentifier": "t_string_storage_ptr",
+                        "typeString": "string"
+                      }
+                    },
+                    "id": 1711,
+                    "nodeType": "ArrayTypeName",
+                    "src": "778:8:10",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_array$_t_string_storage_$dyn_storage_ptr",
+                      "typeString": "string[]"
+                    }
+                  },
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 1715,
+                  "mutability": "mutable",
+                  "name": "_quotes",
+                  "nameLocation": "818:7:10",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 1722,
+                  "src": "802:23:10",
+                  "stateVariable": false,
+                  "storageLocation": "memory",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_array$_t_string_memory_ptr_$dyn_memory_ptr",
+                    "typeString": "string[]"
+                  },
+                  "typeName": {
+                    "baseType": {
+                      "id": 1713,
+                      "name": "string",
+                      "nodeType": "ElementaryTypeName",
+                      "src": "802:6:10",
+                      "typeDescriptions": {
+                        "typeIdentifier": "t_string_storage_ptr",
+                        "typeString": "string"
+                      }
+                    },
+                    "id": 1714,
+                    "nodeType": "ArrayTypeName",
+                    "src": "802:8:10",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_array$_t_string_storage_$dyn_storage_ptr",
+                      "typeString": "string[]"
+                    }
+                  },
+                  "visibility": "internal"
+                }
+              ],
+              "src": "777:49:10"
+            },
+            "returnParameters": {
+              "id": 1721,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 1720,
+                  "mutability": "mutable",
+                  "name": "",
+                  "nameLocation": "-1:-1:-1",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 1722,
+                  "src": "874:22:10",
+                  "stateVariable": false,
+                  "storageLocation": "memory",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_array$_t_struct$_ReferenceData_$1697_memory_ptr_$dyn_memory_ptr",
+                    "typeString": "struct IStdReference.ReferenceData[]"
+                  },
+                  "typeName": {
+                    "baseType": {
+                      "id": 1718,
+                      "nodeType": "UserDefinedTypeName",
+                      "pathNode": {
+                        "id": 1717,
+                        "name": "ReferenceData",
+                        "nodeType": "IdentifierPath",
+                        "referencedDeclaration": 1697,
+                        "src": "874:13:10"
+                      },
+                      "referencedDeclaration": 1697,
+                      "src": "874:13:10",
+                      "typeDescriptions": {
+                        "typeIdentifier": "t_struct$_ReferenceData_$1697_storage_ptr",
+                        "typeString": "struct IStdReference.ReferenceData"
+                      }
+                    },
+                    "id": 1719,
+                    "nodeType": "ArrayTypeName",
+                    "src": "874:15:10",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_array$_t_struct$_ReferenceData_$1697_storage_$dyn_storage_ptr",
+                      "typeString": "struct IStdReference.ReferenceData[]"
+                    }
+                  },
+                  "visibility": "internal"
+                }
+              ],
+              "src": "873:24:10"
+            },
+            "scope": 1723,
+            "src": "748:150:10",
+            "stateMutability": "view",
+            "virtual": false,
+            "visibility": "external"
+          }
+        ],
+        "scope": 1724,
+        "src": "27:873:10",
+        "usedErrors": []
+      }
+    ],
+    "src": "0:902:10"
+  },
+  "compiler": {
+    "name": "solc",
+    "version": "0.8.10+commit.fc410830.Emscripten.clang"
+  },
+  "networks": {},
+  "schemaVersion": "3.4.3",
+  "updatedAt": "2022-01-23T14:11:30.816Z",
+  "devdoc": {
+    "kind": "dev",
+    "methods": {},
+    "version": 1
+  },
+  "userdoc": {
+    "kind": "user",
+    "methods": {
+      "getReferenceData(string,string)": {
+        "notice": "Returns the price data for the given base/quote pair. Revert if not available."
+      },
+      "getReferenceDataBulk(string[],string[])": {
+        "notice": "Similar to getReferenceData, but with multiple base/quote pairs at once."
+      }
+    },
+    "version": 1
+  }
+}
