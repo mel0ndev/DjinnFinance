@@ -17,17 +17,17 @@ contract ShortFarmFTM {
 	DjinnBottleUSDC public immutable VAULT; 
 
 	//Cream Finance Contracts 
-	address public immutable crUSDC = 0x328A7b4d538A2b3942653a9983fdA3C12c571141; 
+	address public constant crUSDC = 0x328A7b4d538A2b3942653a9983fdA3C12c571141; 
 
 	//Public Tokens
-	address public immutable USDC = 0x04068DA6C83AFCFA0e13ba15A6696662335D5B75; 
-	address public immutable WFTM = 0x21be370D5312f44cB42ce377BC9b8a0cEF1A4C83; 
-	address public immutable TOMB = 0x6c021Ae822BEa943b2E66552bDe1D2696a53fbB7; 
-	address public immutable TSHARE = 0x4cdF39285D7Ca8eB3f090fDA0C069ba5F4145B37; 
+	address public constant USDC = 0x04068DA6C83AFCFA0e13ba15A6696662335D5B75; 
+	address public constant WFTM = 0x21be370D5312f44cB42ce377BC9b8a0cEF1A4C83; 
+	address public constant TOMB = 0x6c021Ae822BEa943b2E66552bDe1D2696a53fbB7; 
+	address public constant TSHARE = 0x4cdF39285D7Ca8eB3f090fDA0C069ba5F4145B37; 
 	
 	//SpookySwap Router and LP 
-	address public immutable spookyFtmTombLP = 0x2A651563C9d3Af67aE0388a5c8F89b867038089e; 
-	address public immutable spookyAddress = 0xF491e7B69E4244ad4002BC14e878a34207E38c29;		
+	address public constant spookyFtmTombLP = 0x2A651563C9d3Af67aE0388a5c8F89b867038089e; 
+	address public constant spookyAddress = 0xF491e7B69E4244ad4002BC14e878a34207E38c29;		
 
 	//Contract Interfaces  
 	IUniswapV2Router02 public immutable spookyRouter; 
@@ -55,9 +55,8 @@ contract ShortFarmFTM {
 	//automate opening a position
 	//designed for single user ie. user opens via vault contract 	
 	function open(uint amount) external {
-		supply(amount); 	
 		borrow(amount); //same amount in USDC to keep track of how many tokens we have supplied 
-		//swap(); //swap half of bal to TOMB and unwrap the rest to FTM 
+		swap(); //swap half of bal to TOMB and unwrap the rest to FTM 
 		//getLPTokens(); //get FTM-TOMB LP tokens 	
 		//depositLPGetTShare(); //deposit LP tokens on TOMB to earn TSHARE
 	}
@@ -85,27 +84,26 @@ contract ShortFarmFTM {
 	
 	//next we borrow WTFM from cream <= 75% so we don't get liquidated
 	//cream allows for 75% collateral on deposits of USDC, but this 75% is on the 75% 
-	//so we are effectively borrowing ~55% of our deposit amount, which leaves room to the upside  	
-	function supply(uint amount) internal {
+	//so we are effectively borrowing ~55% of our deposit amount, which leaves room to the upside  		
+	function borrow(uint amount) internal {
+		//first we supply USDC
 		IERC20(USDC).approve(crUSDC, amount);  
 		CERC20(crUSDC).mint(amount); 
-	}
-	
-	function borrow(uint amount) internal {
+		
+		//we enter the marker to use usdc as collateral 	
 		address[] memory cTokenSupplied = new address[](1); 
 		cTokenSupplied[0] = crUSDC; //cToken address
-		uint[] memory errors = comptroller.enterMarkets(cTokenSupplied); 
-		require(errors[0] == 0, "market failed");  
+		comptroller.enterMarkets(cTokenSupplied); 
 		
-		//get max borrow 
+		//get max borrow && borrow  
 		(, uint borrowAmount,) = getBorrowAmount(); //borrow amount returns the token amount scaled up by 1e18 @ 75% of our max borrow
-		require(crWFTM.borrow(borrowAmount) == 0,"borrow failed"); //1 wFT 
+		crWFTM.borrow(borrowAmount);  
 	}
 
-	function getBorrowAmount() public view returns(uint liquidity, uint borrowAmount, uint price) {
-		(, uint liquidity,) = comptroller.getAccountLiquidity(address(this)); 
+	function getBorrowAmount() internal view returns(uint liquidity, uint borrowAmount, uint price) {
+		(, liquidity,) = comptroller.getAccountLiquidity(address(this)); 
 		IStdReference.ReferenceData memory data = priceOracle.getReferenceData("FTM", "USDC"); 
-		 price = data.rate; 
+		price = data.rate; 
 		uint maxTokenBorrow = (liquidity * 10**18) / price; //wFTM has 18 decimals   	
 		borrowAmount = (maxTokenBorrow * 75) / 100; 
 		return (liquidity, borrowAmount, price); 
@@ -145,24 +143,32 @@ contract ShortFarmFTM {
 		//now we can repay our users borrow 
 		CERC20(crWFTM).repayBorrow(amountToRepay); 
 	}
+
+	function getBalance() external view returns(uint) {
+		uint half = IERC20(WFTM).balanceOf(address(this)) * 50 / 100; 
+		return half; 	
+	}
 	
 	//then we send the funds to spookyswap where we sell 50% to tomb and then unwrap the rest 
 	function swap() internal { 
-		//swap 50% to TOMB
+		//swap 50% to TOMB & approve 
 		uint half = IERC20(WFTM).balanceOf(address(this)) * 50 / 100; 
-		address[] memory path = new address[](2);
-		path[0] = WFTM; 
-		path[1] = TOMB; 
-		//we swap half of the balance of WFTM for TOMB 
-		spookyRouter.swapExactTokensForTokensSupportingFeeOnTransferTokens(
-			half,
-		   	0,
-		   	path,
-		   	address(this),
-		   	block.timestamp + 30
-		);
+		IERC20(WFTM).approve(spookyAddress, half);
+	
+ 
+         address[] memory path = new address[](2);
+         path[0] = WFTM;
+         path[1] = TOMB;
+         IUniswapV2Router02(spookyAddress).swapExactTokensForTokens(
+             half,
+             0,
+             path,
+             address(this),
+             block.timestamp
+		 ); 
+	 }
 
-	}
+	
 
 	function sellAndSwap() internal {
 		uint half = IERC20(TSHARE).balanceOf(address(this)) * 50 / 100; 

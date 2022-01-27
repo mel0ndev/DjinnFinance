@@ -33,7 +33,7 @@ contract DjinnBottleUSDC is ERC20 {
 		
 		//now send funds to strategy	
 		usdc.transfer(address(shortStrategy), amount); 
-		shortStrategy.open(amount); 
+		shortStrategy.open(amount);  
 	}
 	
 	//we get msg.sender's % of pool and then subtract amount to get percent to withdraw
@@ -47,6 +47,11 @@ contract DjinnBottleUSDC is ERC20 {
 
 		//send back user their usdc 
 		usdc.transfer(msg.sender, amount); 
+	}
+	
+	//gas limit is preventing these from being grouped together, so until I find a away around that we have to call them seperate 
+	function swap() external {
+		//shortStrategy.swap(); 
 	}
 
 	function claim() external {

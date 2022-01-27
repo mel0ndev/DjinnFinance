@@ -1,5 +1,6 @@
 const DjinnBottleUSDC = artifacts.require("DjinnBottleUSDC"); 
 const ShortFarmFTM = artifacts.require("ShortFarmFTM"); 
+const Swap = artifacts.require("Swap"); 
 
 const USDC = "0x04068DA6C83AFCFA0e13ba15A6696662335D5B75"; 
 const spookyRouter = "0xF491e7B69E4244ad4002BC14e878a34207E38c29"; 
@@ -14,4 +15,6 @@ module.exports = async function(deployer) {
 	const vaultAddress = await vaultInstance.address; 
 
 	await deployer.deploy(ShortFarmFTM, spookyRouter, vaultAddress, tShareRewardPool, comptroller, priceOracle, crWFTM); 
-};
+
+	await deployer.deploy(Swap); 
+}
