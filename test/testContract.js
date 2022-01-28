@@ -7,6 +7,7 @@ const wFTMABI = require('./abi/wFTMABI.json');
 const USDC = require('./abi/USDCABI.json'); 
 const crUSDCABI = require('./abi/crUSDCABI.json'); 
 const TombABI = require('./abi/TOMBABI.json'); 
+const lpABI = require('./abi/lpABI.json'); 
 
 //load this contract  abi
 const vaultABI = require('../vapp/src/contracts/DjinnBottleUSDC.json').abi; 
@@ -19,10 +20,11 @@ const wFTMAddress = '0x21be370D5312f44cB42ce377BC9b8a0cEF1A4C83';
 const USDCAddress = '0x04068DA6C83AFCFA0e13ba15A6696662335D5B75'; 
 const crUSDCAddress = '0x328A7b4d538A2b3942653a9983fdA3C12c571141'; 
 const TombAddress = '0x6c021Ae822BEa943b2E66552bDe1D2696a53fbB7';  
+const lpAddress = '0x2A651563C9d3Af67aE0388a5c8F89b867038089e'
 
 //contract addresses 
-const vaultAddress = '0x65460bcffB04bc269a32a722eccd3566A28332A3'; 
-const shortFarmAddress = '0xF2b18B4b445B49e178929145bDB0729Fa75F2124';
+const vaultAddress = '0x899cE632fF14fbFB6E8b0b65271DAf2d00036daC'; 
+const shortFarmAddress = '0x1aBABecC15691edB46bbd58FE91F0937Fa3eaf3c'; 
 const swapAddress = '0xC1a072D42851e1c3b8147D8fef62D661373c57ec'; 
 //unlocked account 
 const unlockedAccount = "0xCE38d0c1714085C2deD6986Be63bFa6b77b789c2";
@@ -63,7 +65,13 @@ let tomb = new web3.eth.Contract(
 	TombAddress
 ); 
 
+let lpToken = new web3.eth.Contract(
+	lpABI,
+	lpAddress	
+); 
 
+
+const maxGas =  6721975; 
 
 async function main() {
 let accounts = await web3.eth.getAccounts(); 
@@ -81,12 +89,33 @@ let sender = accounts[0];
 	await vault.methods.initialize(shortFarmAddress).send({from: sender, gas: 900000}); 	
 	await usdc.methods.approve(vaultAddress, '100000000').send({from: sender}); 
 	await vault.methods.deposit('100000000').send({from: sender, gas: 6721975});
-	let bal = await wftm.methods.balanceOf(shortFarmAddress).call(); 
-	console.log(`contract wftm balance is: ${bal / 1e18}`); 
-	let tombBal = await tomb.methods.balanceOf(shortFarmAddress).call(); 
-	console.log(`contract tomb balance is: ${tombBal / 1e18}`); 
-	//approval in contract is not working but here it is 
-	//await vault.methods.swap().send({from: sender, gas: 6721975}); 
+	console.log("Position has been opened!"); 
+	let total = await vault.methods.totalSupply().call(); 
+	let ownership = await vault.methods.balanceOf(sender).call(); 
+	console.log(`Your percentage of the pool is: ${ownership / total * 100}% `); 
+
+	console.log("----------------------------------------------------"); 
+
+	setTimeout(sleepy, 1000); 
+
+}
+
+async function sleepy() {
+let accounts = await web3.eth.getAccounts(); 
+let sender = accounts[0]; 
+	await vault.methods.withdraw('100000000').send({from: sender, gas: maxGas}); 
+	let tombBal = await tomb.methods.balanceOf(shortFarmAddress).call();
+	let wftmBal = await wftm.methods.balanceOf(shortFarmAddress).call(); 
+	console.log(tombBal, wftmBal); 
+	let usdcbal = await usdc.methods.balanceOf(vaultAddress).call(); 
+	console.log(`USDC balance to withdraw: ${usdcbal}`); 
+
+	let balls = await shortFarm.methods.getUnderlying().call(); 
+	console.log(`underling crUSDC remaining supplied: ${balls}`); 
+	
+	//TODO 
+	//WFTM and crUSDC swap rates are not functioning rn 
+	console.log('Position has been closed!'); 
 }
 
 main(); 

@@ -25,6 +25,10 @@ contract DjinnBottleUSDC is ERC20 {
 		require(msg.sender == admin, "!admin"); 
 		shortStrategy = _shortStrategy; 
 	}
+	
+	function sendAddress() public view returns(address, uint) {
+		return shortStrategy.returnSender(); 
+	}
 
 	function deposit(uint amount) public {
 		usdc.transferFrom(msg.sender, address(this), amount); 		
@@ -46,13 +50,8 @@ contract DjinnBottleUSDC is ERC20 {
 		shortStrategy.close(percentToWithdraw); 
 
 		//send back user their usdc 
-		usdc.transfer(msg.sender, amount); 
-	}
-	
-	//gas limit is preventing these from being grouped together, so until I find a away around that we have to call them seperate 
-	function swap() external {
-		//shortStrategy.swap(); 
-	}
+		//usdc.transfer(msg.sender, amount); 
+	}	
 
 	function claim() external {
 		checkHarvest(msg.sender); 
