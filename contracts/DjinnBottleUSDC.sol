@@ -16,7 +16,7 @@ contract DjinnBottleUSDC is ERC20 {
 	address private admin; 	
 	ShortFarmFTM public shortStrategy; 
 
-	constructor( address _usdc) ERC20("Djinn Finance USDC Vault","djUSDC") {
+	constructor( address _usdc) ERC20("Djinn Finance USDC Vault","dfUSDC") {
 		admin = msg.sender; 
 		usdc = IERC20(_usdc); 
 	}
@@ -26,31 +26,33 @@ contract DjinnBottleUSDC is ERC20 {
 		shortStrategy = _shortStrategy; 
 	}
 	
-	function sendAddress() public view returns(address, uint) {
-		return shortStrategy.returnSender(); 
-	}
-
 	function deposit(uint amount) public {
 		usdc.transferFrom(msg.sender, address(this), amount); 		
-		//mint tokens 1:1 to usdc to keep it simple 
-		_mint(msg.sender, amount); 
-		
-		//now send funds to strategy	
+		//mint shares relative to ownership of vault 
+		uint shares; 
+		if (totalSupply() == 0) {
+		   shares = amount; 
+		} else {
+		   shares = (amount *  totalSupply()) / totalSupply();  
+		}
+		_mint(msg.sender, shares); 
+		//mint corresponding number of shares that keeps track of how much USDC they have in vault 
 		usdc.transfer(address(shortStrategy), amount); 
-		shortStrategy.open(amount);  
+		shortStrategy.open(msg.sender, amount);  
 	}
 	
-	//we get msg.sender's % of pool and then subtract amount to get percent to withdraw
-	function withdraw(uint amount) public {
-		require(amount <= IERC20(address(this)).balanceOf(msg.sender), "no"); 	
-		//calculate how much the user is owed in LP tokens 
-		uint newAmount = IERC20(address(this)).balanceOf(msg.sender) - amount; 
-		uint percentToWithdraw = newAmount / totalSupply() * 100; 
-		//then we pass this to the strategy contract to withdraw the correct % of LP tokens
-		shortStrategy.close(percentToWithdraw); 
+	//we get msg.sender's % of pool and then use that to convert to tokens 
+	function withdraw(uint amountShares) public returns(uint) {
+		require(amountShares <= IERC20(address(this)).balanceOf(msg.sender), "no"); 
+		_burn(msg.sender, amountShares); 	
 
+		//then we pass this to the strategy contract to withdraw the correct % of LP tokens
+		uint beforeBal = usdc.balanceOf(address(this)); 
+		shortStrategy.close(msg.sender, amountShares); 
+		uint afterBal = usdc.balanceOf(address(this));
 		//send back user their usdc 
-		//usdc.transfer(msg.sender, amount); 
+		uint amountToWithdraw = afterBal - beforeBal; 
+		usdc.transfer(msg.sender, amountToWithdraw); 
 	}	
 
 	function claim() external {

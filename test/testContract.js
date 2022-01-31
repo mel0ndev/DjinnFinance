@@ -23,13 +23,14 @@ const TombAddress = '0x6c021Ae822BEa943b2E66552bDe1D2696a53fbB7';
 const lpAddress = '0x2A651563C9d3Af67aE0388a5c8F89b867038089e'
 
 //contract addresses 
-const vaultAddress = '0x899cE632fF14fbFB6E8b0b65271DAf2d00036daC'; 
-const shortFarmAddress = '0x1aBABecC15691edB46bbd58FE91F0937Fa3eaf3c'; 
+const vaultAddress = '0x66743601C8107c95dbC2AFA58DA2a08999325C72';
+const shortFarmAddress = '0xAea855EBA9e12075dfD13F9d2D52df216e19CBE6'; 
 const swapAddress = '0xC1a072D42851e1c3b8147D8fef62D661373c57ec'; 
 //unlocked account 
 const unlockedAccount = "0xCE38d0c1714085C2deD6986Be63bFa6b77b789c2";
 const wftmWhale = "0xef764BAC8a438E7E498c2E5fcCf0f174c3E3F8dB"; 
 
+//initialize web3 contracts 
 let shortFarm = new web3.eth.Contract(
 	shortFarmABI, 
 	shortFarmAddress
@@ -95,23 +96,30 @@ let sender = accounts[0];
 	console.log(`Your percentage of the pool is: ${ownership / total * 100}% `); 
 
 	console.log("----------------------------------------------------"); 
+	let shares  = await vault.methods.balanceOf(sender).call(); 
+	console.log(shares); 
+	let strategyBal = await shortFarm.methods.balanceOf(shortFarmAddress).call();
+	console.log(strategyBal); 
+	let amountPerShares = strategyBal / shares; 
+	console.log(`amount per share: ${amountPerShares}`); 
+	console.log(`lp tokens to withdraw: ${amountPerShares * shares}`); 
+
+	let check = await shortFarm.methods.depositBalance(sender).call(); 
+	console.log(check); 
 
 	setTimeout(sleepy, 1000); 
 
 }
-
+//TODO calculate how to get deposit amount - how much is being borrowed against
 async function sleepy() {
 let accounts = await web3.eth.getAccounts(); 
 let sender = accounts[0]; 
-	await vault.methods.withdraw('100000000').send({from: sender, gas: maxGas}); 
-	let tombBal = await tomb.methods.balanceOf(shortFarmAddress).call();
-	let wftmBal = await wftm.methods.balanceOf(shortFarmAddress).call(); 
-	console.log(tombBal, wftmBal); 
-	let usdcbal = await usdc.methods.balanceOf(vaultAddress).call(); 
-	console.log(`USDC balance to withdraw: ${usdcbal}`); 
+	await vault.methods.withdraw('100000000').send({from: sender, gas: maxGas});
+	let underlingBalance = await shortFarm.methods.getUnderlying().call();
+	console.log(underlingBalance); 
 
 	let balls = await shortFarm.methods.getUnderlying().call(); 
-	console.log(`underling crUSDC remaining supplied: ${balls}`); 
+	console.log(`underlying crUSDC remaining supplied: ${balls}`); 
 	
 	//TODO 
 	//WFTM and crUSDC swap rates are not functioning rn 
