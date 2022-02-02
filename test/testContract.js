@@ -23,8 +23,8 @@ const TombAddress = '0x6c021Ae822BEa943b2E66552bDe1D2696a53fbB7';
 const lpAddress = '0x2A651563C9d3Af67aE0388a5c8F89b867038089e'
 
 //contract addresses 
-const vaultAddress = '0x66743601C8107c95dbC2AFA58DA2a08999325C72';
-const shortFarmAddress = '0xAea855EBA9e12075dfD13F9d2D52df216e19CBE6'; 
+const vaultAddress = '0x18a05dE9A8779d30bB45d9916589d21dE8f582C8';
+const shortFarmAddress = '0x9C8610cE7002a46161aC97588Fa2893C71dEC57b'; 
 const swapAddress = '0xC1a072D42851e1c3b8147D8fef62D661373c57ec'; 
 //unlocked account 
 const unlockedAccount = "0xCE38d0c1714085C2deD6986Be63bFa6b77b789c2";
@@ -95,7 +95,7 @@ let sender = accounts[0];
 	let ownership = await vault.methods.balanceOf(sender).call(); 
 	console.log(`Your percentage of the pool is: ${ownership / total * 100}% `); 
 
-	console.log("----------------------------------------------------"); 
+	console.log("----------------------------------------------------");
 	let shares  = await vault.methods.balanceOf(sender).call(); 
 	console.log(shares); 
 	let strategyBal = await shortFarm.methods.balanceOf(shortFarmAddress).call();
@@ -106,23 +106,29 @@ let sender = accounts[0];
 
 	let check = await shortFarm.methods.depositBalance(sender).call(); 
 	console.log(check); 
-
+	
+//	setTimeout(harvest, 10000); //wait 10 seconds 
 	setTimeout(sleepy, 1000); 
 
 }
-//TODO calculate how to get deposit amount - how much is being borrowed against
+
+async function harvest() {	
+let accounts = await web3.eth.getAccounts(); 
+let sender = accounts[0]; 
+	await vault.methods.harvest().send({from: sender, gas: maxGas}); 
+}
+
+
 async function sleepy() {
 let accounts = await web3.eth.getAccounts(); 
 let sender = accounts[0]; 
 	await vault.methods.withdraw('100000000').send({from: sender, gas: maxGas});
-	let underlingBalance = await shortFarm.methods.getUnderlying().call();
-	console.log(underlingBalance); 
+	let underlyingBalance = await shortFarm.methods.getUnderlying().call();
+	console.log(`underlying balance is: ${underlyingBalance}`); 
 
-	let balls = await shortFarm.methods.getUnderlying().call(); 
-	console.log(`underlying crUSDC remaining supplied: ${balls}`); 
+	let usdcBalance = await usdc.methods.balanceOf(sender).call(); 
+	console.log(usdcBalance / 1e6); 
 	
-	//TODO 
-	//WFTM and crUSDC swap rates are not functioning rn 
 	console.log('Position has been closed!'); 
 }
 

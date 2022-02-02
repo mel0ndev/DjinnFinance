@@ -958,12 +958,12 @@
     "250": {
       "events": {},
       "links": {},
-      "address": "0x0aF27b7311Ac00E52271c7C4213c62Cbf8511A99",
-      "transactionHash": "0x8e919fa8827adf2e37964aa2ddc3bf17f7d6bde775c91271759801f5a7ae8ce2"
+      "address": "0xeCa3aFed79FDcf4178efD42A7E5e6beCaa2F5C4C",
+      "transactionHash": "0x9788233701486d9e3ae2c314f2abbd5839402dd276a5ff38440c9cb21cf667bf"
     }
   },
   "schemaVersion": "3.4.3",
-  "updatedAt": "2022-01-30T22:48:06.667Z",
+  "updatedAt": "2022-02-02T00:59:45.929Z",
   "networkType": "ethereum",
   "devdoc": {
     "methods": {}

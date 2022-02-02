@@ -13,12 +13,16 @@ contract DjinnBottleUSDC is ERC20 {
 	mapping(address => uint) private lastHarvest; 
 	IERC20 public usdc;
 
+	uint private constant PROTOCOL_FEE = 100; 
+
 	address private admin; 	
+	address public controller; //the contract that will be in charge of depositing gas fees into strategies and autoharvesting  
 	ShortFarmFTM public shortStrategy; 
 
-	constructor( address _usdc) ERC20("Djinn Finance USDC Vault","dfUSDC") {
+	constructor( address _usdc, address _controller) ERC20("Djinn Finance USDC Vault","dfUSDC") {
 		admin = msg.sender; 
 		usdc = IERC20(_usdc); 
+		controller = _controller; 
 	}
 
 	function initialize(ShortFarmFTM _shortStrategy) external {
@@ -27,18 +31,22 @@ contract DjinnBottleUSDC is ERC20 {
 	}
 	
 	function deposit(uint amount) public {
+		//we charging a deposit fee because I'm poor
 		usdc.transferFrom(msg.sender, address(this), amount); 		
+		uint feeAmount = (amount * (PROTOCOL_FEE / 10000)); //1% deposit fee 
+		uint newAmount = amount - feeAmount; 
+
 		//mint shares relative to ownership of vault 
 		uint shares; 
 		if (totalSupply() == 0) {
-		   shares = amount; 
+		   shares = newAmount; 
 		} else {
-		   shares = (amount *  totalSupply()) / totalSupply();  
+		   shares = (newAmount*  totalSupply()) / totalSupply();  
 		}
 		_mint(msg.sender, shares); 
 		//mint corresponding number of shares that keeps track of how much USDC they have in vault 
-		usdc.transfer(address(shortStrategy), amount); 
-		shortStrategy.open(msg.sender, amount);  
+		usdc.transfer(address(shortStrategy), newAmount); 
+		shortStrategy.open(msg.sender, newAmount);  
 	}
 	
 	//we get msg.sender's % of pool and then use that to convert to tokens 
@@ -54,6 +62,11 @@ contract DjinnBottleUSDC is ERC20 {
 		uint amountToWithdraw = afterBal - beforeBal; 
 		usdc.transfer(msg.sender, amountToWithdraw); 
 	}	
+
+	function callHarvest() external {
+		require(msg.sender == controller, "only the autoharvester contract can call this"); 
+		shortStrategy.harvest(); 
+	}
 
 	function claim() external {
 		checkHarvest(msg.sender); 

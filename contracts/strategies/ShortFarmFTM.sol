@@ -58,6 +58,7 @@ contract ShortFarmFTM is ERC20 {
 	//automate opening a position
 	//designed for single user ie. user opens via vault contract 	
 	function open(address user, uint amount) external {
+		require(msg.sender == address(VAULT), "!vault"); 
 		borrow(user, amount); //same amount in USDC to keep track of how many tokens we have supplied 
 		swap(); //swap half of bal to TOMB and unwrap the rest to FTM 
 		getLPTokens(); //get FTM-TOMB LP tokens 	
@@ -66,9 +67,8 @@ contract ShortFarmFTM is ERC20 {
 
 	//automate the harvest 
 	function harvest() external {
-		require(msg.sender == address(VAULT), "no"); 
+		require(msg.sender == address(VAULT), "vault"); 
 		IMasterChef(tShareRewardPool).deposit(0, 0); //0 is poolId and we call a deposit of 0 to allocate the shares to this contract
-		//chargeFees(); 
 		sellAndSwap(); //sell tshare for 50% TOMB 50% WFTM 
 		getLPTokens(); 
 		depositLPGetTShare(); 
@@ -86,7 +86,7 @@ contract ShortFarmFTM is ERC20 {
 	//next we borrow WTFM from cream <= 75% so we don't get liquidated
 	//cream allows for 75% collateral on deposits of USDC, but this 75% is on the 75% 
 	//so we are effectively borrowing ~55% of our deposit amount, which leaves room to the upside  		
-	function borrow(address user, uint amount) internal {
+	function borrow(address user, uint amount) internal {	
 		uint underlyingBefore = getUnderlying(); 
 
 		//first we supply USDC
@@ -108,7 +108,7 @@ contract ShortFarmFTM is ERC20 {
 
 		//I'm sorry you have to look at this monstrosity 
 		//this stores what percentage of the deposit was not used to swap for LP tokens to return on withdrawl  
-		uint depositRemaining = (((borrowAmount * price) / 1e36)*1e6) - depositAmount; //scale down to WAD USD amount then scale by 1e6 
+		uint depositRemaining = (depositAmount - ((borrowAmount * price) / 1e36) * 1e6); 
 		depositBalance[user] += depositRemaining; 
 	}
 
@@ -227,11 +227,10 @@ contract ShortFarmFTM is ERC20 {
 		 ); 
 	 }
 
-	
-
 	function sellAndSwap() internal {
-		uint half = IERC20(TSHARE).balanceOf(address(this)) * 50 / 100; 
-		uint fee = half * CREATOR_FEE; 
+		(uint tombBefore, uint wftmBefore) = getIERC20Balance(); 
+
+		uint half = IERC20(TSHARE).balanceOf(address(this)) * 50 / 100;   
 		address[] memory pathToTomb = new address[](3); 
 		pathToTomb[0] = TSHARE;  
 		pathToTomb[1] = WFTM; 
@@ -256,6 +255,16 @@ contract ShortFarmFTM is ERC20 {
 			address(this),
 			block.timestamp + 30
 		); 
+		
+		(uint tombAfter, uint wftmAfter) = getIERC20Balance(); 	
+		uint tombToSend = tombAfter - tombBefore; 
+		uint wftmToSend = wftmAfter - wftmBefore; 
+		
+		//charge the fees here
+		uint feeAmountTomb = chargeFeesOnHarvest(tombToSend); 	
+		uint feeAmountWftm = chargeFeesOnHarvest(wftmToSend);
+		IERC20(TOMB).transfer(address(VAULT), feeAmountTomb); 
+		IERC20(WFTM).transfer(address(VAULT), feeAmountWftm); 	
 	}
 
 	function getLPTokens() internal {
@@ -270,10 +279,6 @@ contract ShortFarmFTM is ERC20 {
 		IUniswapV2Router02(spookyAddress).addLiquidity(TOMB, WFTM, tombAmount, ftmAmount, 1, 1, address(this), block.timestamp + 30); 
 	}
 
-	function getLPBalnace() external view returns(uint lpAmount) {
-		return lpAmount = IERC20(spookyFtmTombLP).balanceOf(address(this));	
-	}
-
 	function depositLPGetTShare() internal {
 		//deposit into tshare vault using _pid but idk how to get that currently 	
 		uint lpTokenBalance = IERC20(spookyFtmTombLP).balanceOf(address(this)); 
@@ -283,6 +288,16 @@ contract ShortFarmFTM is ERC20 {
 		//after this deposit the contract should be earning tshares as a reward 
 		IERC20(spookyFtmTombLP).approve(tShareRewardPool, lpTokenBalance); 
 		IMasterChef(tShareRewardPool).deposit(0, lpTokenBalance); //FTM-TOMB pool ID is 0 on Tomb.finance  
+	}
+
+	function chargeFeesOnHarvest(uint amount) internal view returns(uint feeAmount) {
+		return feeAmount = amount * (CREATOR_FEE / 10000) * 100; //0.1 or 1% 
+	}
+
+	function getIERC20Balance() internal view returns(uint amountTomb, uint amountWftm) {
+		amountTomb = IERC20(TOMB).balanceOf(address(this)); 
+		amountWftm = IERC20(WFTM).balanceOf(address(this)); 
+		return (amountTomb, amountWftm); 
 	}
 
 	receive() external payable{} 
