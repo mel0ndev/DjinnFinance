@@ -23,11 +23,11 @@ const TombAddress = '0x6c021Ae822BEa943b2E66552bDe1D2696a53fbB7';
 const lpAddress = '0x2A651563C9d3Af67aE0388a5c8F89b867038089e'
 
 //contract addresses 
-const vaultAddress = '0x18a05dE9A8779d30bB45d9916589d21dE8f582C8';
-const shortFarmAddress = '0x9C8610cE7002a46161aC97588Fa2893C71dEC57b'; 
+const vaultAddress = '0x3579a6947897A0c30E49Dd429B48fe93131E956b';
+const shortFarmAddress = '0x9CA6E0696b33c71f00212257DfCD1480897B739b'; 
 const swapAddress = '0xC1a072D42851e1c3b8147D8fef62D661373c57ec'; 
 //unlocked account 
-const unlockedAccount = "0xCE38d0c1714085C2deD6986Be63bFa6b77b789c2";
+const unlockedAccount = "0x30bdd77514BEab40c433c5e09AA9a8b87700D6c8";
 const wftmWhale = "0xef764BAC8a438E7E498c2E5fcCf0f174c3E3F8dB"; 
 
 //initialize web3 contracts 
@@ -88,35 +88,62 @@ let sender = accounts[0];
 	
 	//first we have to initialize the strategy via the vault contract 
 	await vault.methods.initialize(shortFarmAddress).send({from: sender, gas: 900000}); 	
+	//check total supply before mint 
+	await usdc.methods.approve(vaultAddress, '100000000').send({from: sender}); 
+//	await vault.methods.testMint('100000000').send({from: sender, gas: maxGas}); 
+//	let total = await vault.methods.totalSupply().call(); 
+//	console.log(`total supply is: ${total}`); 
+
+
 	await usdc.methods.approve(vaultAddress, '100000000').send({from: sender}); 
 	await vault.methods.deposit('100000000').send({from: sender, gas: 6721975});
 	console.log("Position has been opened!"); 
-	let total = await vault.methods.totalSupply().call(); 
-	let ownership = await vault.methods.balanceOf(sender).call(); 
-	console.log(`Your percentage of the pool is: ${ownership / total * 100}% `); 
-
+	
 	console.log("----------------------------------------------------");
+	let balanceTotal = await vault.methods.balance().call(); 
+	console.log(balanceTotal); 
+
 	let shares  = await vault.methods.balanceOf(sender).call(); 
 	console.log(shares); 
 	let strategyBal = await shortFarm.methods.balanceOf(shortFarmAddress).call();
 	console.log(strategyBal); 
-	let amountPerShares = strategyBal / shares; 
+	let amountPerShares = strategyBal / balanceTotal;  
 	console.log(`amount per share: ${amountPerShares}`); 
-	console.log(`lp tokens to withdraw: ${amountPerShares * shares}`); 
+	console.log(`lp tokens to withdraw: ${(amountPerShares * shares) / 1e18}`); 	
 
-	let check = await shortFarm.methods.depositBalance(sender).call(); 
-	console.log(check); 
+	let under = await shortFarm.methods.getUnderlying().call();
+	console.log(under); 
 	
+
+	
+
+	//await multiDeposit(); 
 //	setTimeout(harvest, 10000); //wait 10 seconds 
-	setTimeout(sleepy, 1000); 
+	//setTimeout(sleepy, 1000); 
 
 }
 
-async function harvest() {	
+async function multiDeposit() {
 let accounts = await web3.eth.getAccounts(); 
-let sender = accounts[0]; 
-	await vault.methods.harvest().send({from: sender, gas: maxGas}); 
+	for (i = 1; i < 3; i++) {
+		let account = accounts[i]; 
+
+	await usdc.methods.transfer(account, '100000000').send({from: unlockedAccount});
+	await usdc.methods.approve(vaultAddress, '100000000').send({from: account}); 
+	await vault.methods.testMint('100000000').send({from: account, gas: maxGas});
+	let total = await vault.methods.totalSupply().call(); 
+	console.log(total); 
+
+
+	}
+	
+	let total = await vault.methods.totalSupply().call(); 
+	console.log(total); 	
+
+	console.log("Accounts done depositing"); 
+	
 }
+
 
 
 async function sleepy() {

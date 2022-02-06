@@ -24,29 +24,47 @@ contract DjinnBottleUSDC is ERC20 {
 		usdc = IERC20(_usdc); 
 		controller = _controller; 
 	}
-
+	
+	//set strategy address 
 	function initialize(ShortFarmFTM _shortStrategy) external {
 		require(msg.sender == admin, "!admin"); 
 		shortStrategy = _shortStrategy; 
 	}
+
+	function balance() public returns(uint) {
+		uint base = usdc.balanceOf(address(this)) + shortStrategy.getUnderlying(); 	
+		uint scale = (base / 1e6) * 1e18; 
+		return scale; 
+	}
+
+	function testMint(uint shares) public {
+		usdc.transferFrom(msg.sender, address(this), shares); 
+		if (totalSupply() == 0) {
+			_mint(msg.sender, shares); 
+		} else {
+			shares = (shares * totalSupply()) / balance();
+		   _mint(msg.sender, shares); 	
+		}
+	}
 	
 	function deposit(uint amount) public {
-		//we charging a deposit fee because I'm poor
 		usdc.transferFrom(msg.sender, address(this), amount); 		
-		uint feeAmount = (amount * (PROTOCOL_FEE / 10000)); //1% deposit fee 
+
+		uint feeAmount = (amount * PROTOCOL_FEE) / 1e4;  //1% deposit fee 
 		uint newAmount = amount - feeAmount; 
 
-		//mint shares relative to ownership of vault 
+		//mint shares relative to ownership of vault (as percentage scaled up by 1e18)  
 		uint shares; 
 		if (totalSupply() == 0) {
-		   shares = newAmount; 
+		   shares = amount * 1e12;  
 		} else {
-		   shares = (newAmount*  totalSupply()) / totalSupply();  
+			shares = ((amount * 1e12) * totalSupply()) / balance(); 
 		}
-		_mint(msg.sender, shares); 
-		//mint corresponding number of shares that keeps track of how much USDC they have in vault 
+		_mint(msg.sender, shares);
+
+		//send to strategy contract 
 		usdc.transfer(address(shortStrategy), newAmount); 
-		shortStrategy.open(msg.sender, newAmount);  
+		shortStrategy.open(msg.sender, newAmount, shares);  
 	}
 	
 	//we get msg.sender's % of pool and then use that to convert to tokens 

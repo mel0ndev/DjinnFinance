@@ -57,9 +57,9 @@ contract ShortFarmFTM is ERC20 {
 	
 	//automate opening a position
 	//designed for single user ie. user opens via vault contract 	
-	function open(address user, uint amount) external {
+	function open(address user, uint amount, uint amountShares) external {
 		require(msg.sender == address(VAULT), "!vault"); 
-		borrow(user, amount); //same amount in USDC to keep track of how many tokens we have supplied 
+		borrow(user, amount, amountShares); //same amount in USDC to keep track of how many tokens we have supplied 
 		swap(); //swap half of bal to TOMB and unwrap the rest to FTM 
 		getLPTokens(); //get FTM-TOMB LP tokens 	
 		depositLPGetTShare(); //deposit LP tokens on TOMB to earn TSHARE
@@ -86,9 +86,7 @@ contract ShortFarmFTM is ERC20 {
 	//next we borrow WTFM from cream <= 75% so we don't get liquidated
 	//cream allows for 75% collateral on deposits of USDC, but this 75% is on the 75% 
 	//so we are effectively borrowing ~55% of our deposit amount, which leaves room to the upside  		
-	function borrow(address user, uint amount) internal {	
-		uint underlyingBefore = getUnderlying(); 
-
+	function borrow(address user, uint amount, uint amountShares) internal {
 		//first we supply USDC
 		IERC20(USDC).approve(crUSDC, amount);  
 		CERC20(crUSDC).mint(amount); 
@@ -101,15 +99,8 @@ contract ShortFarmFTM is ERC20 {
 		//get max borrow && borrow  
 		(uint liquidity, uint borrowAmount, uint price) = getBorrowAmount();
 		crWFTM.borrow(borrowAmount);  
-
-		//check how much was deposited by the user
-		uint underlyingAfter = getUnderlying();  
-		uint depositAmount = underlyingAfter - underlyingBefore; //1e6 
-
-		//I'm sorry you have to look at this monstrosity 
-		//this stores what percentage of the deposit was not used to swap for LP tokens to return on withdrawl  
-		uint depositRemaining = (depositAmount - ((borrowAmount * price) / 1e36) * 1e6); 
-		depositBalance[user] += depositRemaining; 
+		
+		depositBalance[user] = amountShares; 
 	}
 
 	function getBorrowAmount() internal view returns(uint liquidity, uint borrowAmount, uint price) {
@@ -117,14 +108,14 @@ contract ShortFarmFTM is ERC20 {
 		IStdReference.ReferenceData memory data = priceOracle.getReferenceData("FTM", "USDC"); 
 		price = data.rate; 
 		uint maxTokenBorrow = (liquidity * 10**18) / price; //wFTM has 18 decimals   	
-		borrowAmount = (maxTokenBorrow * 75) / 100; 
+		borrowAmount = (maxTokenBorrow * 75) / 100; //this is token amount  
 		return (liquidity, borrowAmount, price); 
 	}
 
 	//where amount is the percentage of LP tokens relative to the callers % ownership of the vault 
 	function swapAndWithdraw(address user, uint amountShares) internal {
 		uint strategyBalance = IERC20(address(this)).balanceOf(address(this)); 
-		uint sharePerLPToken = strategyBalance / amountShares; //both are scaled by 1e18 already I think  
+		uint sharePerLPToken = strategyBalance / VAULT.totalSupply(); //both already WAD scaled 
 		uint percentLP = sharePerLPToken * amountShares; 
 
 		//we first withdraw the LP tokens from TOMB  
@@ -180,8 +171,12 @@ contract ShortFarmFTM is ERC20 {
 	
 		IStdReference.ReferenceData memory data = priceOracle.getReferenceData("FTM", "USDC"); 		
 		uint amountToRepay = amountWftm + amounts[0]; //amount from removing liq + amount from swap  
-		uint dollarAmount = (amountToRepay / 1e18) * (data.rate / 1e18) * 1e6; //token price in USDC for amount of wftm   
-		uint redeemAmount = dollarAmount + depositBalance[user]; //initial deposit + any profits from swapping back 
+		//uint dollarAmount = (amountToRepay / 1e18) * (data.rate / 1e18) * 1e6; //token price in USDC for amount of wftm   
+		//uint redeemAmount = dollarAmount + depositBalance[user]; //initial deposit + any profits from swapping back 
+		
+		//deposit balance is share amount 
+		uint redeemAmount = (depositBalance[user] / getUnderlying()) * getUnderlying(); //percentage of underlying by share amount  
+
  
 		//now we can repay our users borrow
 	   	//need to convert wftm token amount to dollar amount 
