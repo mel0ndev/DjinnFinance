@@ -15,6 +15,8 @@ contract DjinnBottleUSDC is ERC20 {
 
 	uint private constant PROTOCOL_FEE = 100; 
 
+	uint public ass; 
+
 	address private admin; 	
 	address public controller; //the contract that will be in charge of depositing gas fees into strategies and autoharvesting  
 	ShortFarmFTM public shortStrategy; 
@@ -32,19 +34,12 @@ contract DjinnBottleUSDC is ERC20 {
 	}
 
 	function balance() public returns(uint) {
-		uint base = usdc.balanceOf(address(this)) + shortStrategy.getUnderlying(); 	
-		uint scale = (base / 1e6) * 1e18; 
-		return scale; 
+		return usdc.balanceOf(address(this)) + shortStrategy.getUnderlying(); 
 	}
 
 	function testMint(uint shares) public {
-		usdc.transferFrom(msg.sender, address(this), shares); 
-		if (totalSupply() == 0) {
-			_mint(msg.sender, shares); 
-		} else {
-			shares = (shares * totalSupply()) / balance();
-		   _mint(msg.sender, shares); 	
-		}
+		usdc.transferFrom(msg.sender, address(this), shares);
+		_mint(msg.sender, shares); 
 	}
 	
 	function deposit(uint amount) public {
@@ -53,18 +48,12 @@ contract DjinnBottleUSDC is ERC20 {
 		uint feeAmount = (amount * PROTOCOL_FEE) / 1e4;  //1% deposit fee 
 		uint newAmount = amount - feeAmount; 
 
-		//mint shares relative to ownership of vault (as percentage scaled up by 1e18)  
-		uint shares; 
-		if (totalSupply() == 0) {
-		   shares = amount * 1e12;  
-		} else {
-			shares = ((amount * 1e12) * totalSupply()) / balance(); 
-		}
-		_mint(msg.sender, shares);
+		//mint shares == deposit amount (maybe composability later?)  
+		_mint(msg.sender, newAmount);
 
 		//send to strategy contract 
 		usdc.transfer(address(shortStrategy), newAmount); 
-		shortStrategy.open(msg.sender, newAmount, shares);  
+		shortStrategy.open(msg.sender, newAmount);  
 	}
 	
 	//we get msg.sender's % of pool and then use that to convert to tokens 
