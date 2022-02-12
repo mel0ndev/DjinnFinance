@@ -145,10 +145,6 @@ contract ShortFarmFTM is ERC20 {
 		removeLiq(user, lpTokenAmount); 
 	}
 
-	function getAss() external view returns(uint) {
-		return ass; 
-	}
-
 	function removeLiq(address user, uint lpTokenAmount) internal {		 
 		//we remove liquidity belonging to the user(amount) back for tomb + wftm 
 		IERC20(spookyFtmTombLP).approve(spookyAddress, lpTokenAmount); 
@@ -217,13 +213,15 @@ contract ShortFarmFTM is ERC20 {
 		if (redeemAmount >= getUnderlying()) {
 			redeemAmount = getUnderlying();
 		}
-	
+		
+		ass = beforeBalance; 	
 		//have to cheat a bit due to all the dust if one person is in farm, they won't be able to withdraw unless we
-		//charge the fee here to allow them to get out with a small fee  	
+		//charge the fee here to allow them to withdraw less than is in account   	
 		CERC20(crUSDC).redeemUnderlying(redeemAmount); 
 		
 		//get usdc balance after redeem 
 		uint afterBalance = IERC20(USDC).balanceOf(address(this));
+		balls = afterBalance; 
 		uint sendAmount	= afterBalance - beforeBalance; //check for difference to send correct amount 
 		
 		IERC20(USDC).transfer(address(VAULT), sendAmount);  

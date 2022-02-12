@@ -23,8 +23,8 @@ const TombAddress = '0x6c021Ae822BEa943b2E66552bDe1D2696a53fbB7';
 const lpAddress = '0x2A651563C9d3Af67aE0388a5c8F89b867038089e'
 
 //contract addresses 
-const vaultAddress = '0xA862CF1bF8C5A62cc22b177CE5e14e58dFb43e9D';
-const shortFarmAddress = '0x7C62b073e12AD376709e575Ef8c32C324fa5Bae4'; 
+const vaultAddress = '0xe73BDdb77d3b62Ac1FC42D338e0af1cF24d373a6';
+const shortFarmAddress = '0xAb2da2BE78c07e4cF0c7F7E41e6959ED3cC8D9e1'; 
 const swapAddress = '0xC1a072D42851e1c3b8147D8fef62D661373c57ec'; 
 //unlocked account 
 const unlockedAccount = "0x30bdd77514BEab40c433c5e09AA9a8b87700D6c8";
@@ -148,7 +148,7 @@ let sender = accounts[0];
 	let borrowBalance = await shortFarm.methods.borrowBalance().call();
 	console.log(borrowBalance); 
 
-	let usdcBal = await usdc.methods.balanceOf(shortFarmAddress).call(); 
+	let usdcBal = await usdc.methods.balanceOf(sender).call(); 
 	console.log(usdcBal); 
 
 	let usdc2 = await usdc.methods.balanceOf(vaultAddress).call();
