@@ -1,5 +1,5 @@
 <template>
-	<v-app id="main">
+	<v-app v-if="isDrizzleInitialized" id="main">
 		<v-app-bar
 			app
 			flat
@@ -38,15 +38,18 @@
 	</v-app>
 </template>
 
+<div v-else> Please Enable A Web3 Connection </div> 
+
 <script>
 import { mapGetters } from 'vuex'; 
 
 export default {
-	computed: 
-		mapGetters('accounts', ['activeAccount']), 
+	computed: {
+		...mapGetters('accounts', ['activeAccount']), 
+		...mapGetters('drizzle', ['isDrizzleInitialized', 'drizzleInstance']),
+	}, 
 	data() {
 		return {
-			isDrizzleInitialized: true, 
 			routerLinks: [
 				{name: 'Home', link: '/', text: 'Home'},
 				{name: 'Docs', link: '/docs', text: 'Docs'}

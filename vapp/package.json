@@ -12,6 +12,7 @@
     "@drizzle/vue-plugin": "^0.1.0",
     "buefy": "^0.9.14",
     "cache-loader": "^4.1.0",
+    "ethers": "^5.5.4",
     "prettier": "^1.18.2",
     "vue": "^2.6.10",
     "vue-router": "^3.0.3",

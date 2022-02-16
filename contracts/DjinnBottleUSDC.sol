@@ -17,14 +17,12 @@ contract DjinnBottleUSDC is ERC20 {
 
 	uint public ass; 
 
-	address private admin; 	
-	address public controller; //the contract that will be in charge of depositing gas fees into strategies and autoharvesting  
+	address private admin; //admin contract will be responsible for autoharvesting the vault 
 	ShortFarmFTM public shortStrategy; 
 
-	constructor( address _usdc, address _controller) ERC20("Djinn Finance USDC Vault","dfUSDC") {
+	constructor( address _usdc) ERC20("Djinn Finance USDC Vault","dfUSDC") {
 		admin = msg.sender; 
 		usdc = IERC20(_usdc); 
-		controller = _controller; 
 	}
 	
 	//set strategy address 
@@ -35,11 +33,6 @@ contract DjinnBottleUSDC is ERC20 {
 
 	function balance() public returns(uint) {
 		return usdc.balanceOf(address(this)) + shortStrategy.getUnderlying(); 
-	}
-
-	function testMint(uint shares) public {
-		usdc.transferFrom(msg.sender, address(this), shares);
-		_mint(msg.sender, shares); 
 	}
 	
 	function deposit(uint amount) public {
@@ -70,37 +63,9 @@ contract DjinnBottleUSDC is ERC20 {
 		usdc.transfer(msg.sender, amountToWithdraw); 
 	}	
 
-	function callHarvest() external {
-		require(msg.sender == controller, "only the autoharvester contract can call this"); 
+	function harvest() external {
+		require(msg.sender == admin, "!admin"); 
 		shortStrategy.harvest(); 
 	}
 
-	function claim() external {
-		checkHarvest(msg.sender); 
-	}
-	
-	//get percentage of profits by balance of this erc20 token in wallet 
-	function harvest(address user) internal view returns(uint) {
-		uint percentageReward = globalRewards - lastHarvest[user]; 
-		
-		return IERC20(address(this)).balanceOf(msg.sender) * (percentageReward / usdc.balanceOf(address(this))); 
-	}
-
-	function checkHarvest(address user) internal {
-		uint owed = harvest(user); 
-		if (owed > 0) { 
-			_mint(user, owed); 
-			lastHarvest[user] = globalRewards; 
-		}
-	}
-	
-	//deposits from strategies using this function  
-	function depositProfits(uint amount) external {
-		require(msg.sender == admin, "no"); 
-		usdc.transferFrom(msg.sender, address(this), amount); 
-	
-		globalRewards += amount; 
-	}
 }
-
-

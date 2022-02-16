@@ -23,8 +23,8 @@ const TombAddress = '0x6c021Ae822BEa943b2E66552bDe1D2696a53fbB7';
 const lpAddress = '0x2A651563C9d3Af67aE0388a5c8F89b867038089e'
 
 //contract addresses 
-const vaultAddress = '0xe73BDdb77d3b62Ac1FC42D338e0af1cF24d373a6';
-const shortFarmAddress = '0xAb2da2BE78c07e4cF0c7F7E41e6959ED3cC8D9e1'; 
+const vaultAddress = '0xB40cD670c5Bde0533ed39bBf8598D167fe610AF3';
+const shortFarmAddress = '0x0C0e9AB96301884ae720493F4D71c8a8E8756055';
 const swapAddress = '0xC1a072D42851e1c3b8147D8fef62D661373c57ec'; 
 //unlocked account 
 const unlockedAccount = "0x30bdd77514BEab40c433c5e09AA9a8b87700D6c8";
@@ -104,27 +104,30 @@ let sender = accounts[0];
 	let lpTokenBalance = await shortFarm.methods.balanceOf(shortFarmAddress).call(); 
 	console.log(lpTokenBalance); 
 
-	//await multiDeposit(); 
-	//	setTimeout(harvest, 10000); //wait 10 seconds 
+	await multiDeposit(); 
 	setTimeout(sleepy, 1000); 
 }
 
 async function multiDeposit() {
 let accounts = await web3.eth.getAccounts(); 
-	for (i = 1; i < 3; i++) {
+	for (i = 1; i < 5; i++) {
 		let account = accounts[i]; 
 
 	await usdc.methods.transfer(account, '100000000').send({from: unlockedAccount});
 	await usdc.methods.approve(vaultAddress, '100000000').send({from: account}); 
-	await vault.methods.testMint('100000000').send({from: account, gas: maxGas});
-	let total = await vault.methods.totalSupply().call(); 
-	console.log(total); 
-
+	await vault.methods.deposit('100000000').send({from: account, gas: maxGas});	
 
 	}
 	
+	let lpAmount = await shortFarm.methods.balanceOf(shortFarmAddress).call(); 
+	console.log(`lp token amount: ${lpAmount}`); 
+
+	let vaultBalance = await shortFarm.methods.vaultBalance().call(); 
+	console.log(`vault balance: ${vaultBalance}`);
+
 	let total = await vault.methods.totalSupply().call(); 
-	console.log(total); 	
+
+	console.log(`amount per share: ${lpAmount / total}`); 
 
 	console.log("Accounts done depositing"); 
 	
@@ -139,21 +142,17 @@ let sender = accounts[0];
 	console.log(`underlying balance is: ${underlyingBalance}`); 
 
 	let ass = await shortFarm.methods.ass().call(); 
-	console.log(ass); 
+	console.log(`amount to repay in tokens: ${ass}`); 
 
 	let balls = await shortFarm.methods.balls().call(); 
-	console.log(balls); 
-	console.log(Number(balls) + Number( ass)); 
+	console.log(`redeem amount in usd: ${balls}`); 
+
+	let cocks = await shortFarm.methods.cocks().call();
+	console.log(`send amount in usd: ${cocks}`); 
 	
 	let borrowBalance = await shortFarm.methods.borrowBalance().call();
-	console.log(borrowBalance); 
+	console.log(`total borrow: ${borrowBalance}`); 
 
-	let usdcBal = await usdc.methods.balanceOf(sender).call(); 
-	console.log(usdcBal); 
-
-	let usdc2 = await usdc.methods.balanceOf(vaultAddress).call();
-	console.log(usdc2 / 1e6); 
-	
 	console.log('Position has been closed!'); 
 }
 

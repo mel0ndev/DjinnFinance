@@ -20,6 +20,7 @@ contract ShortFarmFTM is ERC20 {
 	mapping(address => uint) public depositBalance;
 	uint public ass; 
 	uint public balls; 
+	uint public cocks; 
 	//Cream Finance Contracts 
 	address public constant crUSDC = 0x328A7b4d538A2b3942653a9983fdA3C12c571141; 
 
@@ -47,7 +48,7 @@ contract ShortFarmFTM is ERC20 {
 				IUniswapV2Router02 _spookyRouter, 
 				ComptrollerInterface _comptroller, 
 				IStdReference _priceOracle,
-				CERC20 _cERC20) ERC20("Djinn Finance FTM Short Farm", "dfFTMShort") {
+				CERC20 _cERC20) ERC20("Djinn FTM Short Farm", "dFTMShort") {
 					address creator = msg.sender;
 					VAULT = _djBottle; 
 					spookyRouter = _spookyRouter; 
@@ -68,7 +69,7 @@ contract ShortFarmFTM is ERC20 {
 
 	//automate the harvest 
 	function harvest() external {
-		require(msg.sender == address(VAULT), "vault"); 
+		require(msg.sender == address(VAULT), "!vault"); 
 		IMasterChef(tShareRewardPool).deposit(0, 0); //0 is poolId and we call a deposit of 0 to allocate the shares to this contract
 		sellAndSwap(); //sell tshare for 50% TOMB 50% WFTM 
 		getLPTokens(); 
@@ -82,6 +83,27 @@ contract ShortFarmFTM is ERC20 {
 		require(msg.sender == address(VAULT), "!vault"); 
 		//swap all LP tokens back to underlying 
 		swapAndWithdraw(user, amountShares);   
+	}
+
+	//this function can be called by anyone if they notice that the vault needs to be rebalanced to avoid being liquidated 
+	function rebalance() external {
+		//get how much we have deposited by getting the underyling
+		uint underlyingAmount = getUnderlying(); 
+		
+		uint borrowBalance = crWFTM.borrowBalanceCurrent(address(this)); 
+		uint borrowPercent = (borrowBalance * 100) / underlyingAmount; 
+		uint maxSafePercent = (underlyingAmount * 75) / 100; //the reserve factor for the underlying  
+		uint maxBorrowVault = (maxSafePercent * 85) / 100; //85% of reserve factor  
+		uint borrowMoreTrigger = (maxSafePercent * 65) / 100; //borrow more when the vaults USD amount is == 60% of reserve factor   
+		
+		//check how the vault's current underlying percent comapres to the rabalance range 60-85% of borrow 
+		if (borrowPercent >= maxSafePercent) {
+			//repay 10% of loan  
+		} else if (borrowPercent <= borrowMoreTrigger) {
+			//borrow 10% more  
+		} 
+
+		//do nothing 
 	}
 	
 	//next we borrow WTFM from cream <= 75% so we don't get liquidated
@@ -124,9 +146,13 @@ contract ShortFarmFTM is ERC20 {
 
 	//where amount is the percentage of LP tokens relative to the users USDC amount in vault 
 	function swapAndWithdraw(address user, uint amountShares) internal {
-		uint strategyBalance = IERC20(address(this)).balanceOf(address(this)); 
-		uint pool = vaultBalance();  
-		uint percentLP = (strategyBalance * pool) / amountShares; //percentLP is WAD scaled now  	
+
+		uint strategyBalance = IERC20(address(this)).balanceOf(address(this)); //18 decimals 
+		uint pool = vaultBalance(); //6 decimals 
+		uint totalShares = IERC20(address(VAULT)).totalSupply(); //6 decimals 
+
+		uint amountPerShare = (strategyBalance / pool);
+		uint percentLP = amountPerShare * amountShares; //returns WAD scaled LP balance
 		
 		//handle rounding error case on big withdraw 
 		if (percentLP > strategyBalance) {
@@ -140,8 +166,10 @@ contract ShortFarmFTM is ERC20 {
 		uint amountAfter = IERC20(spookyFtmTombLP).balanceOf(address(this)); 
 		uint lpTokenAmount = amountAfter - amountBefore; 
 
+		//idr why I had this here? 
+		depositBalance[user] = amountShares;		
+		//put this bitch in quarantine 
 
-		depositBalance[user] = amountShares; 	
 		removeLiq(user, lpTokenAmount); 
 	}
 
@@ -189,6 +217,8 @@ contract ShortFarmFTM is ERC20 {
 		IStdReference.ReferenceData memory data = priceOracle.getReferenceData("FTM", "USDC"); 		
 		uint amountToRepay = amountWftm + amounts[0]; //amount from removing liq + amount from swap in token 
 		uint holding = IERC20(WFTM).balanceOf(address(this)); 
+		
+		ass = amountToRepay; 
 
 		if (amountToRepay >= holding) {
 			amountToRepay = holding; 
@@ -196,17 +226,20 @@ contract ShortFarmFTM is ERC20 {
 
 		uint dollarAmount = (amountToRepay / 1e18) * (data.rate / 1e18) * 1e6; //token price in USDC for amount of wftm   
 		uint diff  = depositBalance[user] - dollarAmount; //share amount - LP token amount = diff  
+
 		
 		//deposit balance is share amount  
 		uint initial = diff + dollarAmount;  
 		uint fee = (initial * CREATOR_FEE) / 10000;
 		uint redeemAmount = initial - fee; 
-
+		
+		balls = redeemAmount; 
 
 		//now we can repay our users borrow
 	   	//need to convert wftm token amount to dollar amount 
 		IERC20(WFTM).approve(address(crWFTM), amountToRepay); //this is wftm token amount  
 		crWFTM.repayBorrow(amountToRepay); 
+
 
 		//creamUSDC balance redeem
 		uint beforeBalance = IERC20(USDC).balanceOf(address(this)); 
@@ -214,17 +247,17 @@ contract ShortFarmFTM is ERC20 {
 			redeemAmount = getUnderlying();
 		}
 		
-		ass = beforeBalance; 	
 		//have to cheat a bit due to all the dust if one person is in farm, they won't be able to withdraw unless we
 		//charge the fee here to allow them to withdraw less than is in account   	
-		CERC20(crUSDC).redeemUnderlying(redeemAmount); 
+		CERC20(crUSDC).redeemUnderlying(balls); 
 		
 		//get usdc balance after redeem 
 		uint afterBalance = IERC20(USDC).balanceOf(address(this));
-		balls = afterBalance; 
 		uint sendAmount	= afterBalance - beforeBalance; //check for difference to send correct amount 
 		
-		IERC20(USDC).transfer(address(VAULT), sendAmount);  
+		cocks = sendAmount; 
+
+//		IERC20(USDC).transfer(address(VAULT), sendAmount);  
 	}
 
 	//then we send the funds to spookyswap where we sell 50% to tomb and then unwrap the rest 
