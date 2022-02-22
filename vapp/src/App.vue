@@ -36,10 +36,10 @@
 			<router-view/>
 		</v-main>
 	</v-app>
-</template>
 
 <div v-else> Please Enable A Web3 Connection </div> 
 
+</template>
 <script>
 import { mapGetters } from 'vuex'; 
 
