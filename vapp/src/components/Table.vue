@@ -74,7 +74,7 @@
 							<span class="subtext"> Amount Available: {{ usdcBalance / 1e6 }} USDC </span> 
 					</v-col>
 					<v-col>
-						<span class="subtext"> Your Shares: {{ shareBalance  / 1e6 }} djUSDC </span> 
+						<span class="subtext"> Your Shares: {{ shareBalance  / 1e6 }} dUSDC </span> 
 					</v-col>
 				</v-row>
 				

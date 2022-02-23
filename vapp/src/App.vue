@@ -1,5 +1,5 @@
 <template>
-	<v-app v-if="isDrizzleInitialized" id="main">
+	<v-app id="main">
 		<v-app-bar
 			app
 			flat
@@ -9,7 +9,10 @@
 				align="center"
 			>
 				<v-col>
-					<h1> Djinn </h1>
+					<v-img 
+						width=50px
+						height=50px
+						src="./assets/djinn.png"> </v-img> 
 				</v-col>
 				<v-col 
 					justify="center"
@@ -27,7 +30,8 @@
 					</div>
 				</v-col>
 				<v-col>
-					<h2 class="account"> Connected, {{ activeAccount.substring(0,4) + `...` + activeAccount.substring(activeAccount.length - 4, activeAccount.length) }} </h2>
+					<h2 v-if="isDrizzleInitialized" class="account"> Connected, {{ activeAccount.substring(0,4) + `...` + activeAccount.substring(activeAccount.length - 4, activeAccount.length) }} </h2>
+					<h2 v-else class="account"> Please Connect to Web3 </h2> 
 				</v-col>
 		</v-row>
 		</v-app-bar>
@@ -36,9 +40,6 @@
 			<router-view/>
 		</v-main>
 	</v-app>
-
-<div v-else> Please Enable A Web3 Connection </div> 
-
 </template>
 <script>
 import { mapGetters } from 'vuex'; 

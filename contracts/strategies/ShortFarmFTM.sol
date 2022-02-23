@@ -71,8 +71,8 @@ contract ShortFarmFTM is ERC20 {
 		require(msg.sender == address(VAULT), "!vault"); 
 		IMasterChef(tShareRewardPool).deposit(0, 0); //0 is poolId and we call a deposit of 0 to allocate the shares to this contract
 		sellAndSwap(); //sell tshare for 50% TOMB 50% WFTM 
-		//getLPTokens(); 
-		//depositLPGetTShare(); 
+		getLPTokens(); 
+		depositLPGetTShare(); 
 	}
 	
 	//automate the closing of the position
@@ -81,7 +81,8 @@ contract ShortFarmFTM is ERC20 {
 	function close(address user, uint amountShares) external {
 		require(msg.sender == address(VAULT), "!vault"); 
 		//swap all LP tokens back to underlying 
-		swapAndWithdraw(user, amountShares);   
+		swapAndWithdraw(user, amountShares);
+		rebalance(); 
 	}
 
 	//this function can be called by anyone if they notice that the vault needs to be rebalanced to avoid being liquidated 
