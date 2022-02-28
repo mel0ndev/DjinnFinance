@@ -3,7 +3,7 @@ pragma solidity ^0.8.10;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol"; 
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol"; 
-import "./strategies/ShortFarmFTM.sol"; 
+import "./strategies/CreamFtmTombStrategy.sol"; 
 
 //The deposit contract for Djinn Finance
 contract DjinnBottleUSDC is ERC20 {
@@ -89,9 +89,10 @@ contract DjinnBottleUSDC is ERC20 {
 		shortStrategy.harvest(); 
 	}
 
-	function storeCrTokens(address user, uint amount) external {
+	function storeCrTokens(address user, uint amountUSDC, uint amountETH) external {
 		require(msg.sender == address(shortStrategy), "no"); 
-		_mint(user, amount); 
+		uint amountTotal = amountUSDC + amountETH; 
+		_mint(user, amountTotal); 
 	}	
 
 

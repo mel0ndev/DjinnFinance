@@ -4,6 +4,7 @@ const web3 = new Web3('http://127.0.0.1:8545');
 
 //load external abi
 const wFTMABI = require('./abi/wFTMABI.json'); 
+const wethABI = require('./abi/wethABI.json'); 
 const USDC = require('./abi/USDCABI.json'); 
 const crUSDCABI = require('./abi/crUSDCABI.json'); 
 const TombABI = require('./abi/TOMBABI.json'); 
@@ -17,15 +18,16 @@ const swapABI = require('../vapp/src/contracts/Swap.json').abi;
 
 //load external addresses 
 const wFTMAddress = '0x21be370D5312f44cB42ce377BC9b8a0cEF1A4C83';
+const wethAddress = '0x74b23882a30290451A17c44f4F05243b6b58C76d'; 
 const USDCAddress = '0x04068DA6C83AFCFA0e13ba15A6696662335D5B75'; 
 const crUSDCAddress = '0x328A7b4d538A2b3942653a9983fdA3C12c571141'; 
 const TombAddress = '0x6c021Ae822BEa943b2E66552bDe1D2696a53fbB7';  
 const lpAddress = '0x2A651563C9d3Af67aE0388a5c8F89b867038089e'
 
 //contract addresses 
-const vaultAddress = '0x3E71ddadF3A81ECEf1b32ea28c5d8FE4D75B26D1'; 
-const shortFarmAddress = '0x3348ae5e61B2723f48d825C0954dc14a3F214993';
-const swapAddress = '0xC1a072D42851e1c3b8147D8fef62D661373c57ec'; 
+const vaultAddress = '0x70A359F50CAa2971c84E562a2eAeA786C0B8BC76'; 
+const shortFarmAddress = '0x3FD9e052f9032deF0E73AAc9fE3F12Ba684db707';
+
 //unlocked account 
 const unlockedAccount = "0x4a05F104417eA2063a8b02273d4ff523a7968be6";
 const wftmWhale = "0xef764BAC8a438E7E498c2E5fcCf0f174c3E3F8dB"; 
@@ -41,15 +43,15 @@ let vault = new web3.eth.Contract(
 	vaultAddress
 ); 
 
-let swap = new web3.eth.Contract(
-	swapABI, 
-	swapAddress
-); 
-
 let wftm = new web3.eth.Contract(
 	wFTMABI, 
 	wFTMAddress
 );
+
+let weth = new web3.eth.Contract(
+	wethABI, 
+	wethAddress
+); 
 
 let usdc = new web3.eth.Contract(
 	USDC, 
@@ -90,16 +92,27 @@ let sender = accounts[0];
 	await vault.methods.initialize(shortFarmAddress).send({from: sender, gas: 900000}); 	
 	//check total supply before mint 
 	await usdc.methods.approve(vaultAddress, '100000000').send({from: sender}); 
-	await vault.methods.deposit('100000000').send({from: sender, gas: 6721975});
+	await vault.methods.deposit('100000000').send({from: sender, gas: maxGas});
+	
 	console.log("Position has been opened!"); 
 	
 	console.log("----------------------------------------------------");
+
+	let ass = await shortFarm.methods.ass().call(); 
+	console.log(ass); 
+
+	let farmBalUSDC = await usdc.methods.balanceOf(shortFarmAddress).call();
+	let farmBalWETH = await weth.methods.balanceOf(shortFarmAddress).call();
+	console.log(farmBalUSDC, farmBalWETH); 
+
+	let borrowAmount = await shortFarm.methods.getBorrowAmount().call(); 
+	console.log(borrowAmount); 
 	
-	let tokenBorrow = await shortFarm.methods.tokenBorrowBalance(sender).call(); 
+	let tokenBorrow = await shortFarm.methods.depositors(sender).call(); 
 	console.log(tokenBorrow); 
 	
-	await multiDeposit(); 
-	setTimeout(sleepy, 1000); 
+//	await multiDeposit(); 
+//	setTimeout(sleepy, 1000); 
 
 }
 
