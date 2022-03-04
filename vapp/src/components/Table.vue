@@ -146,6 +146,7 @@
 <script>
 import { mapGetters } from 'vuex'; 
 import Web3 from 'web3' 
+import {abi} from "../contracts/DjinnBottleUSDC.json"; 
 const web3 = new Web3;
 
 const maxApprove = new web3.utils.BN('2').pow(new web3.utils.BN('256')).sub(new web3.utils.BN('1')).toString(); 
@@ -177,11 +178,11 @@ export default {
 		},
 
 		TVL() {
-			return this.call('DjinnBottleUSDC', 'totalSupply', []); 
+			return this.loadTVL(); 
 		},
 
 		underlyingRewardAmount() {
-			return this.call('ShortFarmFTM', 'totalSupply', []);
+			return this.call('DeltaNeutralFtmTomb', 'totalSupply', []);
 		},
 
 		shareBalance() {
@@ -211,6 +212,10 @@ export default {
 
 		onWithdraw() {
 			this.drizzleInstance.contracts['DjinnBottleUSDC'].methods['withdraw'].cacheSend(this.value * 1e6); 
+		},
+
+		loadTVL() {
+			this.drizzlIenstance.contracts['DjinnBottleUSDC'].methods['balance'].cacheCall(); 
 		},
 
 		call(contract, method, args, out='number') {
@@ -250,7 +255,8 @@ export default {
 			contractName: "Usdc",
 			method: "balanceOf",
 			methodArgs: [this.activeAccount]
-		});
+		}); 
+
 	}
 
 }

@@ -24,9 +24,6 @@
 
 		<v-row>
 			<Table /> 
-			<v-dialog class="dialog" v-model="dialogLoad" width="75%"> 
-				<Alert /> 
-			</v-dialog> 
 		</v-row>
 	</v-container>
 </template> 
@@ -34,13 +31,11 @@
 
 <script>
 import Table from "./Table.vue"; 
-import Alert from "./Alert.vue"; 
 
 export default {
 	name: 'Main', 
 	components: {
 		Table,
-		Alert
 	}, 
 
 	data() {

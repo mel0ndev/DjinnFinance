@@ -5,10 +5,11 @@ const USDC = require('./abi/USDCABI.json');
 const USDCAddress = '0x04068DA6C83AFCFA0e13ba15A6696662335D5B75';
 
 const shortFarmABI = require('../vapp/src/contracts/ShortFarmFTM.json').abi;
-const shortFarmAddress = '0x0F744e1Eb7c33C615E3fA57f93b18fdB46dafe05'; 
-
 const vaultABI = require('../vapp/src/contracts/DjinnBottleUSDC.json').abi;
-const vaultAddress = '0xF62b4F17b03b088B207a6fCf2b3BA40d7Dd230C0'; 
+
+const vaultAddress = '0x6569f8f5d188226EE53A997B433c7F253F70FA1e'; 
+const shortFarmAddress = '0xdA056774dad61a1081d0025FDE6799E9c076212e'; 
+
 
 let vault = new web3.eth.Contract(
 	vaultABI,

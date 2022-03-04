@@ -25,8 +25,8 @@ const TombAddress = '0x6c021Ae822BEa943b2E66552bDe1D2696a53fbB7';
 const lpAddress = '0x2A651563C9d3Af67aE0388a5c8F89b867038089e'
 
 //contract addresses 
-const vaultAddress = '0x70A359F50CAa2971c84E562a2eAeA786C0B8BC76'; 
-const shortFarmAddress = '0x3FD9e052f9032deF0E73AAc9fE3F12Ba684db707';
+const vaultAddress = '0x09623a8D1D1A0EA92fFc76D0F960b61F675f8D38'; 
+const shortFarmAddress = '0x8078Faf007a86FfA13317ED2b75ea52946a28614';
 
 //unlocked account 
 const unlockedAccount = "0x4a05F104417eA2063a8b02273d4ff523a7968be6";
@@ -98,21 +98,21 @@ let sender = accounts[0];
 	
 	console.log("----------------------------------------------------");
 
-	let ass = await shortFarm.methods.ass().call(); 
-	console.log(ass); 
-
-	let farmBalUSDC = await usdc.methods.balanceOf(shortFarmAddress).call();
-	let farmBalWETH = await weth.methods.balanceOf(shortFarmAddress).call();
-	console.log(farmBalUSDC, farmBalWETH); 
-
 	let borrowAmount = await shortFarm.methods.getBorrowAmount().call(); 
 	console.log(borrowAmount); 
 	
-	let tokenBorrow = await shortFarm.methods.depositors(sender).call(); 
-	console.log(tokenBorrow); 
-	
-//	await multiDeposit(); 
-//	setTimeout(sleepy, 1000); 
+	let tokenBorrow = await shortFarm.methods.tokenBorrowBalance(sender).call(); 
+	console.log(`token borrow: ${tokenBorrow}`); 
+
+	let LPTokenBalance = await shortFarm.methods.balanceOf(shortFarmAddress).call();
+	console.log(LPTokenBalance); 
+
+	let supply = await vault.methods.totalSupply().call();
+	console.log(supply); 
+
+
+	await multiDeposit(); 
+	setTimeout(sleepy, 1000); 
 
 }
 
@@ -153,19 +153,21 @@ let sender = accounts[0];
 	console.log('Position has been closed!'); 
 	console.log('--------------------------------------------'); 
 	
-	let profits = await usdc.methods.balanceOf(sender).call(); 
+	let profits = await usdc.methods.balanceOf(shortFarmAddress).call(); 
 	console.log(profits / 1e6); 
+	let ethAmount = await weth.methods.balanceOf(shortFarmAddress).call();
+	console.log(ethAmount / 1e18); 
 
-	let tsharesEarned = await shortFarm.methods.tshareBalance().call(); 
-	console.log(tsharesEarned); 
+	let borrow = await shortFarm.methods.tokenBorrowBalance(sender).call();
+	console.log(borrow); 
 
-	let lpTokenBalance = await shortFarm.methods.balanceOf(shortFarmAddress).call(); 
-	console.log(lpTokenBalance); 
-
-	await vault.methods.harvest().send({from: sender, gas: maxGas}); 
-	let ass = await shortFarm.methods.ass().call(); 
-	console.log(ass); 
-
+	let ass = await shortFarm.methods.ass().call();
+	let balls = await shortFarm.methods.balls().call();
+	let cocks = await shortFarm.methods.cocks().call(); 
+	let tits = await shortFarm.methods.tits().call();
+	console.log(ass, balls, cocks, tits); 
+	let amt = await usdc.methods.balanceOf(sender).call(); 
+	console.log(amt / 1e6); 
 }
 
 main(); 

@@ -1,7 +1,7 @@
 import Web3 from 'web3'; 
 const web3 = new Web3('http://127.0.0.1:8545'); 
 import DjinnBottleUSDC from "./contracts/DjinnBottleUSDC.json"; 
-import ShortFarmFTM from "./contracts/ShortFarmFTM.json"; 
+import DeltaNeutralFtmTomb from "./contracts/DeltaNeutralFtmTomb.json"; 
 import USDCABI from "../../test/abi/USDCABI.json"; 
 
 
@@ -15,7 +15,7 @@ const options = {
       url: 'ws://127.0.0.1:9545'
     }
   },
-  contracts: [DjinnBottleUSDC, ShortFarmFTM, {
+  contracts: [DjinnBottleUSDC, DeltaNeutralFtmTomb, {
 	contractName: 'Usdc',
 	web3Contract: new web3.eth.Contract(
 		USDCABI, 

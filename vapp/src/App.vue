@@ -36,15 +36,32 @@
 		</v-row>
 		</v-app-bar>
 		
-		<v-main>
+		<v-main v-if="isDrizzleInitialized">
+			<v-dialog v-model="showDialog" class="dialogBox"> 
+				<Alert />
+			</v-dialog> 
+
 			<router-view/>
+
 		</v-main>
+
+		<div v-else> 
+			<AltLoad />	
+		</div>
+
 	</v-app>
 </template>
 <script>
+import Alert from "./components/Alert.vue"; 
+import AltLoad from "./components/AltLoad.vue"; 
 import { mapGetters } from 'vuex'; 
 
 export default {
+	components: {
+		Alert, 
+		AltLoad,
+	},
+
 	computed: {
 		...mapGetters('accounts', ['activeAccount']), 
 		...mapGetters('drizzle', ['isDrizzleInitialized', 'drizzleInstance']),
@@ -55,7 +72,12 @@ export default {
 				{name: 'Home', link: '/', text: 'Home'},
 				{name: 'Docs', link: '/docs', text: 'Docs'}
 			],
+			showDialog: false, 
 		}
+	}, 
+	created() {
+		this.showDialog = true; 
+
 	}
 
 	

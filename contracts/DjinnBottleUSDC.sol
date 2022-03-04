@@ -17,7 +17,7 @@ contract DjinnBottleUSDC is ERC20 {
 	address public PROTOCOL_TREASURY; //the protocol collects 1% USDC deposits and 1% yield bearing assets
 
 	address private admin; //deployer address used to perform basic admin features
-	ShortFarmFTM public shortStrategy; 
+	DeltaNeutralFtmTomb public deltaNeutral; 
 
 	constructor( address _usdc, address _treasury) ERC20("Djinn Finance USDC Vault","dfUSDC") {
 		admin = msg.sender; 
@@ -28,7 +28,7 @@ contract DjinnBottleUSDC is ERC20 {
 	function changeTreasuryAddress(address newAddress) external {
 		require(msg.sender == admin, "!admin"); 
 		PROTOCOL_TREASURY = newAddress; 	
-		shortStrategy.setTreasury(newAddress); 
+		deltaNeutral.setTreasury(newAddress); 
 	}
 
 	function changeAdmin(address newAdmin) external {
@@ -37,28 +37,25 @@ contract DjinnBottleUSDC is ERC20 {
 	}
 	
 	//set strategy address 
-	function initialize(ShortFarmFTM _shortStrategy) external {
+	function initialize(DeltaNeutralFtmTomb _deltaNeutral) external {
 		require(msg.sender == admin, "!admin"); 
-		shortStrategy = _shortStrategy; 
+		deltaNeutral = _deltaNeutral; 
 	}
 
 	function balance() public returns(uint) {
-		return usdc.balanceOf(address(this)) + shortStrategy.getUnderlying(); 
+		return usdc.balanceOf(address(this)) + deltaNeutral.getUnderlying(); 
 	}
 
-	function getTotal() public returns(uint) {
-		return totalSupply(); 
-	}
-	
 	function deposit(uint amount) public {
 		usdc.transferFrom(msg.sender, address(this), amount); 		
 
 		uint feeAmount = (amount * PROTOCOL_FEE) / 1e4;  //1% deposit fee 
 		uint newAmount = amount - feeAmount;
+		uint shareAmount = (newAmount * totalSupply()) / 1e8; 
 
 		//send to strategy contract 
-		usdc.transfer(address(shortStrategy), newAmount); 
-		shortStrategy.open(msg.sender, newAmount);  
+		usdc.transfer(address(deltaNeutral), newAmount); 
+		deltaNeutral.open(msg.sender, newAmount);  
 
 		//send fee to treasury address 
 		usdc.transfer(PROTOCOL_TREASURY, feeAmount); 
@@ -67,30 +64,25 @@ contract DjinnBottleUSDC is ERC20 {
 	//we get msg.sender's % of pool and then use that to convert to tokens 
 	function withdraw(uint amountShares) public returns(uint) {
 		require(amountShares <= IERC20(address(this)).balanceOf(msg.sender), "no"); 
-		//so we do not divide by zero 
-		if (amountShares < totalSupply()) {
-			_burn(msg.sender, amountShares); 
-		}
-		//then we pass this to the strategy contract to withdraw the correct % of LP tokens
+				
+		//then we pass this to the strategy contract to withdraw the correct % of LP tokens (I think??) 
 		uint beforeBal = usdc.balanceOf(address(this)); 
-		shortStrategy.close(msg.sender, amountShares); 
+		deltaNeutral.close(msg.sender, amountShares); 
 		uint afterBal = usdc.balanceOf(address(this));
+
+		_burn(msg.sender, amountShares); 	
+
 		//send back user their usdc 
 		uint amountToWithdraw = afterBal - beforeBal; 
-		usdc.transfer(msg.sender, amountToWithdraw); 
-
-		//if they are the last to withdraw
-		if (amountShares >= totalSupply()) {
-			_burn(msg.sender, amountShares); 
-		}
+		usdc.transfer(msg.sender, amountToWithdraw);
 	}	
 
 	function harvest() external {
-		shortStrategy.harvest(); 
+		deltaNeutral.harvest(); 
 	}
 
 	function storeCrTokens(address user, uint amountUSDC, uint amountETH) external {
-		require(msg.sender == address(shortStrategy), "no"); 
+		require(msg.sender == address(deltaNeutral), "no"); 
 		uint amountTotal = amountUSDC + amountETH; 
 		_mint(user, amountTotal); 
 	}	

@@ -10,7 +10,7 @@ import "../interfaces/IMasterChef.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol"; 
 
 
-contract ShortFarmFTM is ERC20 {
+contract DeltaNeutralFtmTomb is ERC20 {
 	
 	//Contract Spec/if ifics 
 	address public creator; 
@@ -18,19 +18,9 @@ contract ShortFarmFTM is ERC20 {
 	address public treasuryWallet;  
 	DjinnBottleUSDC public VAULT; 
 
-	//Test Variables
-	uint public ass; 
-	address[] public balls; 
-	
 	//Balances For Withdraw
-	struct Depositor {
-		uint crUSDCBalance; //each token earns a different deposit amount //8 decimals 
-		uint crETHBalance; //8 decimals 
-		uint tokenBorrowBalance; //18 decimals  
-	}
-
-	mapping(address => Depositor) public depositors; 
-
+	mapping(address => uint) public tokenBorrowBalance; //18 decimals  
+	
 	//Cream Finance Contracts (also just the Iron Bank Contracts)
 	address public constant crUSDC = 0x328A7b4d538A2b3942653a9983fdA3C12c571141; 
 	address public constant crETH = 0xcc3E89fBc10e155F1164f8c9Cf0703aCDe53f6Fd; 
@@ -98,6 +88,7 @@ contract ShortFarmFTM is ERC20 {
 		swap(USDC, WETH, swapAmount); 
 		uint usdcAmount = getTokenBalance(USDC);
 		uint wethAmount = getTokenBalance(WETH); 
+
 		//next step
 		borrow(user, usdcAmount, wethAmount);
 	}
@@ -111,7 +102,6 @@ contract ShortFarmFTM is ERC20 {
 		//supply USDC && WETH
 		IERC20(USDC).approve(crUSDC, amountUSDC); 
 		CERC20(crUSDC).mint(amountUSDC);
-		ass = amountUSDC; 	
 
 		IERC20(WETH).approve(crETH, amountWETH); 
 		CERC20(crETH).mint(amountWETH); 
@@ -123,8 +113,6 @@ contract ShortFarmFTM is ERC20 {
 		uint cTokenETHAmount = cTokenETHAfter - cTokenETHBefore; 
 		
 		//store cTokens user amounts separate due to different interest rates 
-		depositors[user].crUSDCBalance += cTokenUSDCAmount; 
-		depositors[user].crETHBalance += cTokenETHAmount; 
 		VAULT.storeCrTokens(user, cTokenUSDCAmount, cTokenETHAmount); 
 	
 		//we enter the markets to use usdc && wftm as collateral 	
@@ -139,10 +127,10 @@ contract ShortFarmFTM is ERC20 {
 		CERC20(crETH).borrow(borrowAmount);  
 		
 		uint borrowBalanceAfter = borrowBalance(); 
-		depositors[user].tokenBorrowBalance += (borrowBalanceAfter - borrowBalanceBefore);   
+		tokenBorrowBalance[user] += (borrowBalanceAfter - borrowBalanceBefore);   
 
 		//next step 
-		//swapForTokens(); 
+		swapForTokens(); 
 	}
 
 	function swapForTokens() internal {
@@ -151,8 +139,8 @@ contract ShortFarmFTM is ERC20 {
 		
 		//execute the swap here 
 		swap(WETH, WFTM, half);  
-		uint rest = getTokenBalance(WETH); 
 
+		uint rest = getTokenBalance(WETH); 
 		swap(WETH, TOMB, rest);
 		
 		//next step 
@@ -250,25 +238,22 @@ contract ShortFarmFTM is ERC20 {
 	function repay(address user, uint amountShares, uint ethAfterSwap) internal {
 		uint profits; 
 		uint amountToRepay;
-		if (ethAfterSwap > depositors[user].tokenBorrowBalance) {
-			profits = ethAfterSwap - depositors[user].tokenBorrowBalance; 
-			amountToRepay = depositors[user].tokenBorrowBalance; 
-			depositors[user].tokenBorrowBalance = 0; 
+		if (ethAfterSwap > tokenBorrowBalance[user]) {
+			profits = ethAfterSwap - tokenBorrowBalance[user]; 
+			amountToRepay = tokenBorrowBalance[user]; 
+			tokenBorrowBalance[user] = 0; 
 		} else {
 			profits = 0; 
 			amountToRepay = ethAfterSwap; 
-			depositors[user].tokenBorrowBalance -= ethAfterSwap; 
+			tokenBorrowBalance[user] -= ethAfterSwap; 
 		}	
+		
+		//crToken shares 
+		(uint ethShares, uint usdcShares) = splitShares(amountShares);	
+		uint ethRedeem = ethShares - (chargeFees(ethShares)); 
+		uint usdcRedeem = usdcShares - (chargeFees(usdcShares));
+		payCreator(chargeFees(ethShares), chargeFees(usdcShares)); 
 
-		(uint ethShares, uint usdcShares) = splitShares(amountShares);
-		uint redeemAmountUSDC = depositors[user].crUSDCBalance - usdcShares; 
-		uint redeemAmountETH = ethAfterSwap; 
-
-		//need a way to split shares into equal parts USDC and WFTM 	
-		depositors[user].crETHBalance -= ethShares; 
-		depositors[user].crUSDCBalance -= usdcShares; 
-
-	
 		//account for rounding errors if last person in vault wants to withdraw 
 		if (amountToRepay > borrowBalance()) {
 			amountToRepay = borrowBalance(); 
@@ -276,33 +261,34 @@ contract ShortFarmFTM is ERC20 {
 
 		//now we can repay our users borrow
 		IERC20(WETH).approve(crETH, amountToRepay);
-		CERC20(crETH).repayBorrow(amountToRepay); 	
+		CERC20(crETH).repayBorrow(amountToRepay); 
 
+		uint ethBefore = getTokenBalance(WETH); 	
+		uint usdcBefore = getTokenBalance(USDC); 	
 		//redeem initial deposit amount + interest 
-		uint ethBefore = getTokenBalance(WETH); 
-		
-		//NOTE: May have to use new CERC20 balance to update crETH and crUSDC user balance 
-		CERC20(crUSDC).redeem(redeemAmountUSDC); 
-		CERC20(crETH).redeem(redeemAmountETH);
-
-		uint ethAfter = getTokenBalance(WETH); 
-		uint ethAmount = ethAfter - ethBefore; 
+		CERC20(crETH).redeem(ethRedeem);
+		CERC20(crUSDC).redeem(usdcRedeem); 
 
 		//one final check for dust 
 		if (profits > getTokenBalance(WETH)) {
 			profits = getTokenBalance(WETH); 
 		}
 
+		uint ethAfter = getTokenBalance(WETH); 
+		uint usdcAfter = getTokenBalance(USDC); 
+		uint ethAmount = (ethAfter - ethBefore) + profits; 
+		uint usdcAmount = usdcAfter - usdcBefore;  
+
 		//final step 
-		swapProfits(ethAmount); 
+		swapProfits(ethAmount, usdcAmount); 
 	}
 
-	//swap wftm for usdc and send back to vault
-	function swapProfits(uint ethAmount) internal {	
+	//swap eth for usdc and send back to vault
+	function swapProfits(uint ethAmount, uint usdcAmount) internal {	
 		uint usdcBefore = getTokenBalance(USDC); 
 		swap(WETH, USDC, ethAmount); 
 		uint usdcAfter = getTokenBalance(USDC); 
-		uint totalToSend = usdcAfter - usdcBefore; 
+		uint totalToSend = (usdcAfter - usdcBefore) + usdcAmount; 
 
 		IERC20(USDC).transfer(address(VAULT), totalToSend); 
 	}
@@ -314,7 +300,7 @@ contract ShortFarmFTM is ERC20 {
 	//sells tshares for tomb and wftm tokens 
 	function compoundLPTokens() internal {
 		uint tsharesInitial = getTokenBalance(TSHARE); 
-		uint harvestFee = chargeFeesOnHarvest(tsharesInitial); 
+		uint harvestFee = chargeFees(tsharesInitial); 
 		IERC20(TSHARE).transfer(treasuryWallet, harvestFee); //goes to vault and will be swapped for gas  
 
 		uint tshares = getTokenBalance(TSHARE);  //update amount 
@@ -370,14 +356,29 @@ contract ShortFarmFTM is ERC20 {
 		return (liquidity, borrowAmount, price); 
 	}
 
-	function splitShares(uint amountShares) internal view returns(uint, uint) {
-		uint ethShares = (amountShares * 70) / 100; 
-		uint usdcShares = amountShares - ethShares; 
+	function getShares(uint amountShares) external view returns(uint, uint) {
+		(uint one, uint two) = splitShares(amountShares); 
+		return (one, two); 
+	}
+	
+	//returns the share per underlying crToken price  
+	function splitShares (uint amountShares) internal view returns(uint, uint) {
+		uint cTokenEth = CERC20(crETH).balanceOf(address(this)); 
+		uint cTokenUsdc = CERC20(crUSDC).balanceOf(address(this)); 
+		uint pool = VAULT.totalSupply(); 
+
+		uint ethShares = (cTokenEth * amountShares) / pool; 
+		uint usdcShares = (cTokenUsdc * amountShares) / pool; 
 
 		return (ethShares, usdcShares); 
 	}
+
+	function payCreator(uint amountEth, uint amountUSDC) internal {
+		CERC20(crETH).transfer(creator, amountEth); 
+		CERC20(crUSDC).transfer(creator, amountUSDC); 
+	}
 	
-	function chargeFeesOnHarvest(uint amount) internal view returns(uint feeAmount) {
+	function chargeFees(uint amount) internal view returns(uint feeAmount) {
 		return feeAmount = (amount * CREATOR_FEE) / 1e4; //0.1 or 1% 
 	}
 
