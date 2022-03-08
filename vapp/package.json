@@ -10,11 +10,13 @@
   "dependencies": {
     "@drizzle/store": "^1.5.0",
     "@drizzle/vue-plugin": "^0.1.0",
+    "axios": "^0.26.0",
     "buefy": "^0.9.14",
     "cache-loader": "^4.1.0",
     "ethers": "^5.5.4",
     "prettier": "^1.18.2",
     "vue": "^2.6.10",
+    "vue-axios": "^3.4.1",
     "vue-router": "^3.0.3",
     "vuetify": "^2.4.0",
     "vuex": "^3.1.1"

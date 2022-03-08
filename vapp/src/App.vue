@@ -31,21 +31,22 @@
 				</v-col>
 				<v-col>
 					<h2 v-if="isDrizzleInitialized" class="account"> Connected, {{ activeAccount.substring(0,4) + `...` + activeAccount.substring(activeAccount.length - 4, activeAccount.length) }} </h2>
-					<h2 v-else class="account"> Please Connect to Web3 </h2> 
+					<h2 v-else class="account"> Please Connect to Fantom </h2> 
 				</v-col>
-		</v-row>
+			</v-row>
 		</v-app-bar>
-		
+	
 		<v-main v-if="isDrizzleInitialized">
 			<v-dialog v-model="showDialog" class="dialogBox"> 
 				<Alert />
 			</v-dialog> 
+			
 
 			<router-view/>
 
 		</v-main>
 
-		<div v-else> 
+		<div v-else> 	
 			<AltLoad />	
 		</div>
 
@@ -64,25 +65,24 @@ export default {
 
 	computed: {
 		...mapGetters('accounts', ['activeAccount']), 
-		...mapGetters('drizzle', ['isDrizzleInitialized', 'drizzleInstance']),
+		...mapGetters('drizzle', ['isDrizzleInitialized', 'drizzleInstance']),	
+
 	}, 
+
 	data() {
 		return {
 			routerLinks: [
 				{name: 'Home', link: '/', text: 'Home'},
-				{name: 'Docs', link: '/docs', text: 'Docs'}
+				{name: 'Borrow', link: '/borrow', text: 'Borrow'}
 			],
-			showDialog: false, 
+			showDialog: false,
 		}
 	}, 
+
 	created() {
 		this.showDialog = true; 
-
-	}
-
-	
+	}	
 }
-
 
 </script>
 

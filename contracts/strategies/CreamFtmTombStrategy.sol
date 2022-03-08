@@ -48,15 +48,16 @@ contract DeltaNeutralFtmTomb is ERC20 {
 	constructor(DjinnBottleUSDC _djBottle, 	
 				IUniswapV2Router02 _spookyRouter, 
 				ComptrollerInterface _comptroller, 
-				IStdReference _priceOracle) ERC20("Djinn FTM Short Farm", "dFTMShort") {
+				IStdReference _priceOracle,
+				address wallet) ERC20("Djinn FTM Short Farm", "dFTMShort") {
 					creator = msg.sender;
 					VAULT = _djBottle; 
 					spookyRouter = _spookyRouter; 
 					comptroller = _comptroller;  
 					priceOracle = _priceOracle; 	
+					treasuryWallet = wallet; 
 				}
 
-	//TODO: swap 50% USDC for 50% FTM to protect against price appreciation 	
 	//designed for single user ie. user opens via vault contract 	
 	function open(address user, uint amount) external {
 		require(msg.sender == address(VAULT), "!vault"); 
@@ -67,9 +68,7 @@ contract DeltaNeutralFtmTomb is ERC20 {
 	function harvest() external {
 		require(msg.sender == address(VAULT), "!vault"); 
 		IMasterChef(tShareRewardPool).deposit(0, 0); //0 is poolId and we call a deposit of 0 to allocate the shares to this contract
-		//sellAndSwap(); //sell tshare for 50% TOMB 50% WFTM 
-	//	getLPTokens(); 
-		//depositLPGetTShare(); 
+		compoundLPTokens(); 
 	}
 	
 	//automate the closing of the position
@@ -77,7 +76,6 @@ contract DeltaNeutralFtmTomb is ERC20 {
 	//so we need to vault contract to determine how many tokens belong to the user from this contract 
 	function close(address user, uint amountShares) external {
 		require(msg.sender == address(VAULT), "!vault"); 
-		//swap all LP tokens back to underlying 
 		withdrawLP(user, amountShares);
 	}
 
@@ -96,8 +94,8 @@ contract DeltaNeutralFtmTomb is ERC20 {
 	//we are borrowing the same amount of deposited ETH to achieve a vault that does not get liquidated	
 	function borrow(address user, uint amountUSDC, uint amountWETH) internal {
 		//first check for any leftovers in the contract
-		uint cTokenUSDCBefore = CERC20(crUSDC).balanceOf(address(this)); 
-		uint cTokenETHBefore = CERC20(crETH).balanceOf(address(this)); 
+		uint cTokenETHBefore = getCrTokenBalance(crETH);
+		uint cTokenUSDCBefore = getCrTokenBalance(crUSDC);
 
 		//supply USDC && WETH
 		IERC20(USDC).approve(crUSDC, amountUSDC); 
@@ -106,8 +104,8 @@ contract DeltaNeutralFtmTomb is ERC20 {
 		IERC20(WETH).approve(crETH, amountWETH); 
 		CERC20(crETH).mint(amountWETH); 
 		
-		uint cTokenUSDCAfter = CERC20(crUSDC).balanceOf(address(this)); 
-		uint cTokenETHAfter = CERC20(crETH).balanceOf(address(this));  
+		uint cTokenETHAfter = getCrTokenBalance(crETH);
+		uint cTokenUSDCAfter = getCrTokenBalance(crUSDC); 
 
 		uint cTokenUSDCAmount = cTokenUSDCAfter - cTokenUSDCBefore; 
 		uint cTokenETHAmount = cTokenETHAfter - cTokenETHBefore; 
@@ -236,23 +234,35 @@ contract DeltaNeutralFtmTomb is ERC20 {
 	}
 	
 	function repay(address user, uint amountShares, uint ethAfterSwap) internal {
+		//crToken shares 
+		(uint ethShares, uint usdcShares) = splitShares(amountShares);	
+		uint ethRedeem; 
+		uint usdcRedeem; 
+		
+		//main logic 
 		uint profits; 
 		uint amountToRepay;
 		if (ethAfterSwap > tokenBorrowBalance[user]) {
 			profits = ethAfterSwap - tokenBorrowBalance[user]; 
 			amountToRepay = tokenBorrowBalance[user]; 
 			tokenBorrowBalance[user] = 0; 
+
+			//min fee
+			ethRedeem = ethShares - (chargeFees(ethShares)); 
+			usdcRedeem = usdcShares - (chargeFees(usdcShares));
+			payCreator(chargeFees(ethShares), chargeFees(usdcShares)); 
+
 		} else {
 			profits = 0; 
 			amountToRepay = ethAfterSwap; 
 			tokenBorrowBalance[user] -= ethAfterSwap; 
+			
+			//max fee on insta withdraw to prevent rounding error profits //3% fee instead of 1%
+			ethRedeem = ethShares - (chargeFees(ethShares) * 2); 
+			usdcRedeem = usdcShares - (chargeFees(usdcShares) * 2);
+			payCreator(chargeFees(ethShares) * 2, chargeFees(usdcShares) * 2); 
 		}	
 		
-		//crToken shares 
-		(uint ethShares, uint usdcShares) = splitShares(amountShares);	
-		uint ethRedeem = ethShares - (chargeFees(ethShares)); 
-		uint usdcRedeem = usdcShares - (chargeFees(usdcShares));
-		payCreator(chargeFees(ethShares), chargeFees(usdcShares)); 
 
 		//account for rounding errors if last person in vault wants to withdraw 
 		if (amountToRepay > borrowBalance()) {
@@ -273,7 +283,8 @@ contract DeltaNeutralFtmTomb is ERC20 {
 		if (profits > getTokenBalance(WETH)) {
 			profits = getTokenBalance(WETH); 
 		}
-
+		
+		//recheck
 		uint ethAfter = getTokenBalance(WETH); 
 		uint usdcAfter = getTokenBalance(USDC); 
 		uint ethAmount = (ethAfter - ethBefore) + profits; 
@@ -345,26 +356,32 @@ contract DeltaNeutralFtmTomb is ERC20 {
 	}
 
 	//returuns USD value of deposited assets, how much can be borrowed, and the price of the borrowed asset 
-	function getBorrowAmount() public view returns(uint liquidity, uint borrowAmount, uint price) {
+	function getBorrowAmount() internal returns(uint liquidity, uint borrowAmount, uint price) {
 		(, liquidity,) = comptroller.getAccountLiquidity(address(this)); 
 		IStdReference.ReferenceData memory data = priceOracle.getReferenceData("ETH", "USDC"); 
 		price = data.rate; 
 
 		uint maxTokenBorrow = (liquidity * 1e18) / price; //ETH has 18 decimals   	
 		borrowAmount = (maxTokenBorrow * 94) / 100; //this is token amount  
-
+			
+		//rebalance check to keep vault delta neutral 
+		uint borrowCheck = borrowAmount + borrowBalance(); 
+		(uint underlying, ) = getUnderlying(); //might have to add current deposit to this? 
+		uint diff; 
+		if (borrowCheck < underlying) {
+			diff = underlying - borrowCheck; 
+			borrowAmount += diff; 	
+		} else if (borrowCheck > underlying) {
+			diff = borrowCheck - underlying; 
+			borrowAmount -= diff; 
+		}
 		return (liquidity, borrowAmount, price); 
-	}
-
-	function getShares(uint amountShares) external view returns(uint, uint) {
-		(uint one, uint two) = splitShares(amountShares); 
-		return (one, two); 
 	}
 	
 	//returns the share per underlying crToken price  
 	function splitShares (uint amountShares) internal view returns(uint, uint) {
-		uint cTokenEth = CERC20(crETH).balanceOf(address(this)); 
-		uint cTokenUsdc = CERC20(crUSDC).balanceOf(address(this)); 
+		uint cTokenEth = getCrTokenBalance(crETH); 
+		uint cTokenUsdc = getCrTokenBalance(crUSDC);
 		uint pool = VAULT.totalSupply(); 
 
 		uint ethShares = (cTokenEth * amountShares) / pool; 
@@ -377,7 +394,7 @@ contract DeltaNeutralFtmTomb is ERC20 {
 		CERC20(crETH).transfer(creator, amountEth); 
 		CERC20(crUSDC).transfer(creator, amountUSDC); 
 	}
-	
+		
 	function chargeFees(uint amount) internal view returns(uint feeAmount) {
 		return feeAmount = (amount * CREATOR_FEE) / 1e4; //0.1 or 1% 
 	}
@@ -386,18 +403,22 @@ contract DeltaNeutralFtmTomb is ERC20 {
 		return amount = IERC20(token).balanceOf(address(this)); 
 	}
 
+	function getCrTokenBalance(address crToken) internal view returns(uint amount) {
+		return amount = CERC20(crToken).balanceOf(address(this)); 
+	}
+
 	function setTreasury(address wallet) external {
 		require(msg.sender == address(VAULT), "!vault"); 
 		treasuryWallet = wallet; 		
 	}
 
-	function getUnderlying() public returns(uint) {
-		return CERC20(crUSDC).balanceOfUnderlying(address(this)); //this returns the underlying USDC amount in 6 decimals 
+	function getUnderlying() public returns(uint, uint) {
+		uint underlyingETH = CERC20(crETH).balanceOfUnderlying(address(this)); 
+		uint underlyingUSDC = CERC20(crUSDC).balanceOfUnderlying(address(this));
+		return (underlyingETH, underlyingUSDC); 
 	}
 
 	function borrowBalance() public returns(uint) {
 		return CERC20(crETH).borrowBalanceCurrent(address(this)); 
 	}
-
-	receive() external payable{} 	
 } 

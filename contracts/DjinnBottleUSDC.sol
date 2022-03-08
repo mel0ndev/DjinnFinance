@@ -8,13 +8,10 @@ import "./strategies/CreamFtmTombStrategy.sol";
 //The deposit contract for Djinn Finance
 contract DjinnBottleUSDC is ERC20 {
 
-//	address public immutable USDC = 0x04068DA6C83AFCFA0e13ba15A6696662335D5B75;  	 
 	IERC20 public usdc;
-	
-//	mapping(address => uint) public crShares; 
-
 	uint private constant PROTOCOL_FEE = 100; 
 	address public PROTOCOL_TREASURY; //the protocol collects 1% USDC deposits and 1% yield bearing assets
+	bool public isPaused; 
 
 	address private admin; //deployer address used to perform basic admin features
 	DeltaNeutralFtmTomb public deltaNeutral; 
@@ -42,11 +39,8 @@ contract DjinnBottleUSDC is ERC20 {
 		deltaNeutral = _deltaNeutral; 
 	}
 
-	function balance() public returns(uint) {
-		return usdc.balanceOf(address(this)) + deltaNeutral.getUnderlying(); 
-	}
-
 	function deposit(uint amount) public {
+		require(isPaused == false, "deposits are not allowed at this time"); 
 		usdc.transferFrom(msg.sender, address(this), amount); 		
 
 		uint feeAmount = (amount * PROTOCOL_FEE) / 1e4;  //1% deposit fee 
@@ -78,6 +72,7 @@ contract DjinnBottleUSDC is ERC20 {
 	}	
 
 	function harvest() external {
+		require(msg.sender == admin, "!admin"); 
 		deltaNeutral.harvest(); 
 	}
 
@@ -87,5 +82,14 @@ contract DjinnBottleUSDC is ERC20 {
 		_mint(user, amountTotal); 
 	}	
 
+	function pause() external {
+		require(msg.sender == admin, "!admin");		
+
+		if (isPaused == false) {
+			isPaused = true; 
+		} else {
+			isPaused = false; 
+		}
+	}
 
 }

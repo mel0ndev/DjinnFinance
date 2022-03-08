@@ -11,6 +11,8 @@
 					flat
 				>
 					<h3> Coming Soon </h3>
+					<br>
+					<p class="subtext"> Dai strategy by Coasey </p>
 
 				</v-card> 
 			</v-col>
@@ -25,8 +27,10 @@
 					flat
 				>
 					<h3> FTM/TOMB Yield Bottle </h3>
+					<v-row>
+						<v-col>
 					<div class="depositCoin">
-						<span class="subtext"> Bottle Your USDC </span>
+						<span class="subtext"> Deposit USDC </span>
 						<div class="coinImage">
 							<v-img src="../assets/usdc.svg"
 								width=50px
@@ -34,9 +38,22 @@
 							> </v-img>
 						</div>
 					</div>
+				</v-col>
+				<v-col>
+					<div class="depositCoin">
+						<span class="subtext"> Receive USDC </span>
+						<div class="coinImage">
+							<v-img src="../assets/usdc.svg"
+								width=50px
+								height=50px
+							> </v-img>
+						</div>
+					</div>	
+				</v-col>
+			</v-row>
 					<v-row>
 						<v-col>
-							<span class="subtext"> APY: </span>
+							<span class="subtext"> APY: {{ getAPY }} </span>
 						</v-col>
 						<v-col>
 							<span class="subtext"> Daily: </span> 	
@@ -64,7 +81,7 @@
 				<v-row>
 					<v-col>
 						<div>
-							<span class="subtext"> TVL: ${{ Number((TVL / 1e6).toFixed(2)) }} </span> 
+							<span class="subtext"> TVL: ${{ TVL }} </span> 
 						</div>
 					</v-col>
 				</v-row>
@@ -145,8 +162,8 @@
 
 <script>
 import { mapGetters } from 'vuex'; 
+import axios from 'axios'; 
 import Web3 from 'web3' 
-import {abi} from "../contracts/DjinnBottleUSDC.json"; 
 const web3 = new Web3;
 
 const maxApprove = new web3.utils.BN('2').pow(new web3.utils.BN('256')).sub(new web3.utils.BN('1')).toString(); 
@@ -178,11 +195,23 @@ export default {
 		},
 
 		TVL() {
-			return this.loadTVL(); 
+			return this.call('Usdc', 'balanceOf', [this.vault]); 
 		},
 
 		underlyingRewardAmount() {
 			return this.call('DeltaNeutralFtmTomb', 'totalSupply', []);
+		},
+
+		getAPY() {
+			const tshareTotalRewards = this.call('TShareRewardPool', 'TOTAL_REWARDS', []) / 1e18; 
+			const tSharePerYearUSD = tshareTotalRewards * this.tsharePrice; 
+			const totalLpDeposited = this.call(
+			'UniswapV2Pair', 'balanceOf', [this.drizzleInstance.contracts['TShareRewardPool'].address]) / 1e18; 
+			const totalSupplyLP = this.call('UniswapV2Pair', 'totalSupply', []) / 1e18; 
+			const apr = (tshareTotalRewards / totalLpDeposited) * 100;
+			
+			//convert to usd price  
+			return totalLpDeposited;  
 		},
 
 		shareBalance() {
@@ -197,7 +226,6 @@ export default {
 			return this.getContractData ({
 				contract: "Usdc",
 				method: "balanceOf",
-				methodArgs: this.user
 			}); 
 		},
 	},
@@ -241,6 +269,8 @@ export default {
 		return {
 			value: '', 
 			allowance: false, 
+			ftmPrice: 0,
+			tsharePrice: 0,
 		}
 	}, 
 
@@ -256,7 +286,14 @@ export default {
 			method: "balanceOf",
 			methodArgs: [this.activeAccount]
 		}); 
+			
+		axios.get("https://api.coingecko.com/api/v3/simple/price?ids=fantom&vs_currencies=USD").then((res) => {
+			this.ftmPrice = res.data.fantom.usd; 
+		});
 
+		axios.get("https://api.coingecko.com/api/v3/simple/price?ids=tomb-shares&vs_currencies=USD").then((resp) => {
+			this.tsharePrice = resp.data['tomb-shares'].usd; 
+		}); 	
 	}
 
 }

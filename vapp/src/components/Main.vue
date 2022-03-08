@@ -16,7 +16,7 @@
 					<h1>
 						Welcome to Djinn 
 					</h1>
-					<h3> Magic Price-Agnostic Yield Generation Bottles </h3> 
+					<h3> Maximum Yield. Minimal Exposure.</h3> 
 				</v-card> 
 			</div>
 			</v-col>

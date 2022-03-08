@@ -1,4 +1,4 @@
-//load web}); 
+//load web3 
 const Web3 = require('web3'); 
 const web3 = new Web3('http://127.0.0.1:8545'); 
 
@@ -12,7 +12,7 @@ const lpABI = require('./abi/lpABI.json');
 
 //load this contract  abi
 const vaultABI = require('../vapp/src/contracts/DjinnBottleUSDC.json').abi; 
-const shortFarmABI = require('../vapp/src/contracts/ShortFarmFTM.json').abi; 
+const shortFarmABI = require('../vapp/src/contracts/DeltaNeutralFtmTomb.json').abi; 
 const swapABI = require('../vapp/src/contracts/Swap.json').abi;
 
 
@@ -25,8 +25,8 @@ const TombAddress = '0x6c021Ae822BEa943b2E66552bDe1D2696a53fbB7';
 const lpAddress = '0x2A651563C9d3Af67aE0388a5c8F89b867038089e'
 
 //contract addresses 
-const vaultAddress = '0x09623a8D1D1A0EA92fFc76D0F960b61F675f8D38'; 
-const shortFarmAddress = '0x8078Faf007a86FfA13317ED2b75ea52946a28614';
+const vaultAddress = '0xE25Bb35466d6db43DEFC15636fFB38Ba15937Ac8'; 
+const shortFarmAddress = '0xd05Fe5C53fa8d876E538DFCc21C571126fb3F179';
 
 //unlocked account 
 const unlockedAccount = "0x4a05F104417eA2063a8b02273d4ff523a7968be6";
@@ -98,8 +98,6 @@ let sender = accounts[0];
 	
 	console.log("----------------------------------------------------");
 
-	let borrowAmount = await shortFarm.methods.getBorrowAmount().call(); 
-	console.log(borrowAmount); 
 	
 	let tokenBorrow = await shortFarm.methods.tokenBorrowBalance(sender).call(); 
 	console.log(`token borrow: ${tokenBorrow}`); 
@@ -124,21 +122,19 @@ let accounts = await web3.eth.getAccounts();
 	await usdc.methods.transfer(account, '100000000').send({from: unlockedAccount});
 	await usdc.methods.approve(vaultAddress, '100000000').send({from: account}); 
 	await vault.methods.deposit('100000000').send({from: account, gas: maxGas});	
-
-	let borrowAmount = await shortFarm.methods.getBorrowAmount().call()
-	console.log(`liquidity in USD: ${borrowAmount[0] / 1e18}`);
 	
 	let totalUserBorrow = await shortFarm.methods.tokenBorrowBalance(account).call();
 	console.log(`total user borrow: ${totalUserBorrow / 1e18}`); 
 
-	let totalBorrow = await shortFarm.methods.borrowBalance().call();
-	console.log(`total borrow amount is now: ${totalBorrow / 1e18}`);
-	
 	}
 
 	
 	let underlying = await shortFarm.methods.getUnderlying().call();
-	console.log(underlying / 1e6);  
+	console.log(underlying);  
+
+	let totalBorrow = await shortFarm.methods.borrowBalance().call();
+	console.log(totalBorrow); 
+
 	
 	console.log("Accounts done depositing"); 
 	
@@ -153,21 +149,20 @@ let sender = accounts[0];
 	console.log('Position has been closed!'); 
 	console.log('--------------------------------------------'); 
 	
-	let profits = await usdc.methods.balanceOf(shortFarmAddress).call(); 
-	console.log(profits / 1e6); 
-	let ethAmount = await weth.methods.balanceOf(shortFarmAddress).call();
-	console.log(ethAmount / 1e18); 
+	let vaultBorrow = await shortFarm.methods.borrowBalance().call(); 
+	console.log(vaultBorrow);
+
+	let underlying = await shortFarm.methods.getUnderlying().call(); 
+	console.log(underlying); 
 
 	let borrow = await shortFarm.methods.tokenBorrowBalance(sender).call();
 	console.log(borrow); 
 
-	let ass = await shortFarm.methods.ass().call();
-	let balls = await shortFarm.methods.balls().call();
-	let cocks = await shortFarm.methods.cocks().call(); 
-	let tits = await shortFarm.methods.tits().call();
-	console.log(ass, balls, cocks, tits); 
 	let amt = await usdc.methods.balanceOf(sender).call(); 
 	console.log(amt / 1e6); 
+
+	await vault.methods.harvest().send({from: sender, gas: maxGas});  
+
 }
 
 main(); 

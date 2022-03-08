@@ -12,6 +12,6 @@ module.exports = async function(deployer) {
 	await deployer.deploy(DjinnBottleUSDC, USDC, treasuryWallet); 
 	const vaultInstance = await DjinnBottleUSDC.deployed(); 
 	const vaultAddress = await vaultInstance.address; 
-	await deployer.deploy(DeltaNeutral, vaultAddress, spookyRouter, comptroller, priceOracle); 
+	await deployer.deploy(DeltaNeutral, vaultAddress, spookyRouter, comptroller, priceOracle, treasuryWallet); 
 
 }
