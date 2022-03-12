@@ -10,11 +10,9 @@ const crUSDCABI = require('./abi/crUSDCABI.json');
 const TombABI = require('./abi/TOMBABI.json'); 
 const lpABI = require('./abi/lpABI.json'); 
 
-//load this contract  abi
+//load local contract abi
 const vaultABI = require('../vapp/src/contracts/DjinnBottleUSDC.json').abi; 
 const shortFarmABI = require('../vapp/src/contracts/DeltaNeutralFtmTomb.json').abi; 
-const swapABI = require('../vapp/src/contracts/Swap.json').abi;
-
 
 //load external addresses 
 const wFTMAddress = '0x21be370D5312f44cB42ce377BC9b8a0cEF1A4C83';
@@ -25,11 +23,11 @@ const TombAddress = '0x6c021Ae822BEa943b2E66552bDe1D2696a53fbB7';
 const lpAddress = '0x2A651563C9d3Af67aE0388a5c8F89b867038089e'
 
 //contract addresses 
-const vaultAddress = '0xE25Bb35466d6db43DEFC15636fFB38Ba15937Ac8'; 
-const shortFarmAddress = '0xd05Fe5C53fa8d876E538DFCc21C571126fb3F179';
+const vaultAddress = '0xB4b743196f72dB42d00990E909B461a514E8057E'; 
+const shortFarmAddress = '0x8102aE0A52EC603173BC3B58b04fe802F103F59a';
 
 //unlocked account 
-const unlockedAccount = "0x4a05F104417eA2063a8b02273d4ff523a7968be6";
+const unlockedAccount = "0x1a8A0255e8B0ED7C596D236bf28D57Ff3978899b";
 const wftmWhale = "0xef764BAC8a438E7E498c2E5fcCf0f174c3E3F8dB"; 
 
 //initialize web3 contracts 
@@ -162,6 +160,7 @@ let sender = accounts[0];
 	console.log(amt / 1e6); 
 
 	await vault.methods.harvest().send({from: sender, gas: maxGas});  
+	console.log('Harvest complete!'); 
 
 }
 

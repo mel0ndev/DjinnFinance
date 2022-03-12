@@ -12,7 +12,7 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 contract DeltaNeutralFtmTomb is ERC20 {
 	
-	//Contract Spec/if ifics 
+	//Contract Specifics 
 	address public creator; 
 	uint private constant CREATOR_FEE = 100; //1% 
 	address public treasuryWallet;  
@@ -324,6 +324,9 @@ contract DeltaNeutralFtmTomb is ERC20 {
 		//call again to avoid rounding errors 
 		uint rest = getTokenBalance(TSHARE); 
 		swap(TSHARE, WFTM, rest); 	
+
+		//reinvest
+		getLPTokens(); 
 	}
 
 	////////////////// END HARVEST LOGIC ////////////////// 
@@ -411,7 +414,8 @@ contract DeltaNeutralFtmTomb is ERC20 {
 		require(msg.sender == address(VAULT), "!vault"); 
 		treasuryWallet = wallet; 		
 	}
-
+	
+	//public for querying from frontend 
 	function getUnderlying() public returns(uint, uint) {
 		uint underlyingETH = CERC20(crETH).balanceOfUnderlying(address(this)); 
 		uint underlyingUSDC = CERC20(crUSDC).balanceOfUnderlying(address(this));

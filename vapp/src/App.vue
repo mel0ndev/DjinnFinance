@@ -9,10 +9,15 @@
 				align="center"
 			>
 				<v-col>
+					<div class="imgWrapper">
 					<v-img 
 						width=50px
 						height=50px
 						src="./assets/djinn.png"> </v-img> 
+				</div>
+				<div class="textWrapper">
+					<span class="alphatext"> pre-alpha v0.25 </span>
+				</div>
 				</v-col>
 				<v-col 
 					justify="center"
@@ -72,8 +77,7 @@ export default {
 	data() {
 		return {
 			routerLinks: [
-				{name: 'Home', link: '/', text: 'Home'},
-				{name: 'Borrow', link: '/borrow', text: 'Borrow'}
+				{name: 'Home', link: '/', text: 'Home'}
 			],
 			showDialog: false,
 		}
@@ -106,6 +110,21 @@ export default {
 .linkName {
 	color: #FFF1E6 !important; 
 	text-decoration: none !important; 
+}
+
+.imgWrapper {
+	padding-top: 10px; 
+	display: inline-block; 
+}
+
+.textWrapper {
+	display: inline-block;   
+}
+
+.alphatext {
+	font-size: 0.6REM;  
+	opacity: 0.75; 
+	padding-left: 10px; 
 }
 
 

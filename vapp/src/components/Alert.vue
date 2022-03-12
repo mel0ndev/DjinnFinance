@@ -12,14 +12,14 @@
 			>
 				<h1> ATTENTION! </h1>
 			
-				<h3> Djinn is a HIGHLY experimental vault system! </h3>
+				<h3> Djinn is a HIGHLY experimental vault system. </h3>
 				<v-row>
 					<v-col justify="center" align="center">
-				<span class="par">	
-					<p> Each vault is built with caution and care, but there are only so many tests that one person can do. 
-						Please use the protocol responsibly, and do not deposit assets that you cannot afford to lose. There 
-						is no guarantee that your funds will be safe. Each vault interacts with numerous other protocols, increasing
-						smart contract risk further. Proceed at your own risk. </p>	
+						<span class="par">	
+							<p> These contracts have not been audited. Please consider this early iteration to be an MVP and thus highly								likely to be vulernable to loss of funds. It is not the intention of this protocol to lose funds,
+							   	but	please, do not deposit assets that you cannot afford to lose. <strong> You will not be refunded.
+								</strong>
+						   	</p>
 				</span>
 					</v-col>
 				</v-row>

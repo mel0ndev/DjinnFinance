@@ -16,7 +16,7 @@
 					<h1>
 						Welcome to Djinn 
 					</h1>
-					<h3> Maximum Yield. Minimal Exposure.</h3> 
+					<h3> Maximum Yield. Minimum Exposure.</h3> 
 				</v-card> 
 			</div>
 			</v-col>
@@ -37,16 +37,6 @@ export default {
 	components: {
 		Table,
 	}, 
-
-	data() {
-		return {
-			dialogLoad: false, 
-		}
-	}, 
-	created() {
-		this.dialogLoad = true; 
-	}
-
 
 }
 </script> 

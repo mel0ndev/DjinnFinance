@@ -53,15 +53,15 @@
 			</v-row>
 					<v-row>
 						<v-col>
-							<span class="subtext"> APY: {{ getAPY }} </span>
+							<span class="subtext"> APY: {{ getAPY.yearlyAPY }}% </span>
 						</v-col>
 						<v-col>
-							<span class="subtext"> Daily: </span> 	
+							<span class="subtext"> Daily: {{ getAPY.dailyAPR }}% </span> 	
 						</v-col>
 					</v-row>
 					<v-row>
 						<v-col> 
-							<span class="subtext"> Pool: {{ underlyingRewardAmount / 1e18 }} </span>
+							<span class="subtext"> Pool: {{ (underlyingRewardAmount / 1e18).toFixed(2).toString() }} LP </span>
 						</v-col>
 					</v-row>
 
@@ -81,17 +81,17 @@
 				<v-row>
 					<v-col>
 						<div>
-							<span class="subtext"> TVL: ${{ TVL }} </span> 
+							<span class="subtext"> TVL: ${{ (TVL / 1e18).toFixed(2).toString() }} </span> 
 						</div>
 					</v-col>
 				</v-row>
 				
 					<v-row>
 						<v-col>
-							<span class="subtext"> Amount Available: {{ usdcBalance / 1e6 }} USDC </span> 
+							<span class="subtext"> Amount Available: {{ (usdcBalance / 1e6).toFixed(2).toString() }} USDC </span> 
 					</v-col>
 					<v-col>
-						<span class="subtext"> Your Shares: {{ shareBalance  / 1e6 }} dUSDC </span> 
+						<span class="subtext"> Your Shares: {{ (shareBalance  / 1e8).toFixed(2).toString() }} dUSDC </span> 
 					</v-col>
 				</v-row>
 				
@@ -194,24 +194,54 @@ export default {
 			return false; 
 		},
 
+		lpPrice() {
+		
+		let lpSupply = this.call('UniswapV2Pair', 'totalSupply', []); 
+		let ftmTombLp = this.drizzleInstance.contracts['UniswapV2Pair'].address; 
+		let underlyingTokenAmountTomb = this.call('Tomb', 'balanceOf', [ftmTombLp]); 
+		let underlyingTokenAmountFtm = this.call('WrappedFtm', 'balanceOf', [ftmTombLp]);
+
+		let lpTombPrice =  underlyingTokenAmountTomb * this.tombPrice; 
+		let lpFtmPrice = underlyingTokenAmountFtm * this.ftmPrice; 
+		let lpTVL = lpTombPrice + lpFtmPrice; 
+		let lpPrice = lpTVL / lpSupply; 
+		return lpPrice; 
+
+		},
+
 		TVL() {
-			return this.call('Usdc', 'balanceOf', [this.vault]); 
+			return this.lpPrice * this.underlyingRewardAmount; 
 		},
 
 		underlyingRewardAmount() {
-			return this.call('DeltaNeutralFtmTomb', 'totalSupply', []);
+			return this.call('DeltaNeutralFtmTomb', 'totalSupply', []); 
 		},
 
 		getAPY() {
-			const tshareTotalRewards = this.call('TShareRewardPool', 'TOTAL_REWARDS', []) / 1e18; 
-			const tSharePerYearUSD = tshareTotalRewards * this.tsharePrice; 
-			const totalLpDeposited = this.call(
-			'UniswapV2Pair', 'balanceOf', [this.drizzleInstance.contracts['TShareRewardPool'].address]) / 1e18; 
-			const totalSupplyLP = this.call('UniswapV2Pair', 'totalSupply', []) / 1e18; 
-			const apr = (tshareTotalRewards / totalLpDeposited) * 100;
+			let tSharePerSecond = this.call('TShareRewardPool', 'tSharePerSecond', []) / 1e18; 
+			let tSharePerSecondAdjusted = (tSharePerSecond * 35500) / 59500; 
+			let tSharePerHour = (tSharePerSecondAdjusted * 60) * 60; 
+			let dailyAmount  = tSharePerHour * 24; 
+			let tSharePerYear= dailyAmount * 365; 
 			
-			//convert to usd price  
-			return totalLpDeposited;  
+			//get LP price 
+			let tSharePoolAddress = this.drizzleInstance.contracts['TShareRewardPool'].address; 
+			let totalInPool = this.call('UniswapV2Pair', 'balanceOf', [tSharePoolAddress]) / 1e18; 
+			let totalLPUSD = totalInPool * this.lpPrice; 
+
+			let dailyReward = dailyAmount * this.tsharePrice; //USD
+			let dailyAPR = (dailyReward / totalLPUSD) * 100; //USD
+			let yearAPR = ((tSharePerYear * this.tsharePrice) / totalLPUSD); 
+
+			let apy = (Math.pow( 1 + (yearAPR / 17520), 17520) - 1) * 100;  
+
+
+			return {	
+				dailyAPR: dailyAPR.toFixed(2).toString(), 
+				yearlyAPY:  apy.toFixed(2).toString()
+			}
+			
+
 		},
 
 		shareBalance() {
@@ -239,13 +269,14 @@ export default {
 		}, 
 
 		onWithdraw() {
-			this.drizzleInstance.contracts['DjinnBottleUSDC'].methods['withdraw'].cacheSend(this.value * 1e6); 
+			this.drizzleInstance.contracts['DjinnBottleUSDC'].methods['withdraw'].cacheSend(this.value * 1e8); 
 		},
 
 		loadTVL() {
 			this.drizzlIenstance.contracts['DjinnBottleUSDC'].methods['balance'].cacheCall(); 
 		},
-
+		
+		//thank you banteg 
 		call(contract, method, args, out='number') {
 			let key = this.drizzleInstance.contracts[contract].methods[method].cacheCall(...args)
 			let value
@@ -270,6 +301,7 @@ export default {
 			value: '', 
 			allowance: false, 
 			ftmPrice: 0,
+			tombPrice: 0,
 			tsharePrice: 0,
 		}
 	}, 
@@ -294,6 +326,10 @@ export default {
 		axios.get("https://api.coingecko.com/api/v3/simple/price?ids=tomb-shares&vs_currencies=USD").then((resp) => {
 			this.tsharePrice = resp.data['tomb-shares'].usd; 
 		}); 	
+
+		axios.get("https://api.coingecko.com/api/v3/simple/price?ids=tomb&vs_currencies=usd").then((response) => {
+			this.tombPrice = response.data.tomb.usd; 
+		}); 
 	}
 
 }
@@ -321,7 +357,8 @@ export default {
 	padding: 10px; 
 }
 
- .subtext {
+.subtext {
+	padding: 10px;  
 	font-size: 0.75rem !important;
 }
 

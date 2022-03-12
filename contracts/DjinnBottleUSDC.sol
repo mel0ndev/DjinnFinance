@@ -11,8 +11,11 @@ contract DjinnBottleUSDC is ERC20 {
 	IERC20 public usdc;
 	uint private constant PROTOCOL_FEE = 100; 
 	address public PROTOCOL_TREASURY; //the protocol collects 1% USDC deposits and 1% yield bearing assets
-	bool public isPaused; 
+	address public autoHarvester; //a contract that receives funds and uses them to harvest the vault every ~30 mins (runs on server)   
 
+	bool public isPaused; 
+	bool public isInitialized; 
+	
 	address private admin; //deployer address used to perform basic admin features
 	DeltaNeutralFtmTomb public deltaNeutral; 
 
@@ -36,10 +39,12 @@ contract DjinnBottleUSDC is ERC20 {
 	//set strategy address 
 	function initialize(DeltaNeutralFtmTomb _deltaNeutral) external {
 		require(msg.sender == admin, "!admin"); 
+		require(isInitialized == false, "already initialized"); 
 		deltaNeutral = _deltaNeutral; 
+		isInitialized = true; 
 	}
 
-	function deposit(uint amount) public {
+	function deposit(uint amount) external {
 		require(isPaused == false, "deposits are not allowed at this time"); 
 		usdc.transferFrom(msg.sender, address(this), amount); 		
 
@@ -56,14 +61,15 @@ contract DjinnBottleUSDC is ERC20 {
 	}
 	
 	//we get msg.sender's % of pool and then use that to convert to tokens 
-	function withdraw(uint amountShares) public returns(uint) {
+	function withdraw(uint amountShares) external {
 		require(amountShares <= IERC20(address(this)).balanceOf(msg.sender), "no"); 
+		require(amountShares > 0, "cannot withdraw 0"); 
 				
 		//then we pass this to the strategy contract to withdraw the correct % of LP tokens (I think??) 
 		uint beforeBal = usdc.balanceOf(address(this)); 
 		deltaNeutral.close(msg.sender, amountShares); 
 		uint afterBal = usdc.balanceOf(address(this));
-
+		
 		_burn(msg.sender, amountShares); 	
 
 		//send back user their usdc 
@@ -72,7 +78,7 @@ contract DjinnBottleUSDC is ERC20 {
 	}	
 
 	function harvest() external {
-		require(msg.sender == admin, "!admin"); 
+		require(msg.sender == admin || msg.sender == autoHarvester, "!harvest"); 
 		deltaNeutral.harvest(); 
 	}
 

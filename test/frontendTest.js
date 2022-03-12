@@ -4,11 +4,11 @@ const web3 = new Web3('http://127.0.0.1:8545');
 const USDC = require('./abi/USDCABI.json');
 const USDCAddress = '0x04068DA6C83AFCFA0e13ba15A6696662335D5B75';
 
-const shortFarmABI = require('../vapp/src/contracts/ShortFarmFTM.json').abi;
+const shortFarmABI = require('../vapp/src/contracts/DeltaNeutralFtmTomb.json').abi;
 const vaultABI = require('../vapp/src/contracts/DjinnBottleUSDC.json').abi;
 
-const vaultAddress = '0x6569f8f5d188226EE53A997B433c7F253F70FA1e'; 
-const shortFarmAddress = '0xdA056774dad61a1081d0025FDE6799E9c076212e'; 
+const vaultAddress = '0xeB791db178589F028552eD2344f23eCE88B8B755'; 
+const shortFarmAddress = '0xa0F179944851B1db652B6797A18c8548E0d9f192'; 
 
 
 let vault = new web3.eth.Contract(
@@ -27,12 +27,15 @@ let shortFarm = new web3.eth.Contract(
 	shortFarmAddress
 );
 
-let unlockedAccount = '0x4a05F104417eA2063a8b02273d4ff523a7968be6'; 
+let unlockedAccount = '0x1a8A0255e8B0ED7C596D236bf28D57Ff3978899b'; 
 
 async function setup() {
 	let accounts = await web3.eth.getAccounts();
 	let metamaskAccount = accounts[0]; 
 	let account2 = accounts[1];
+
+	console.log(await usdc.methods.balanceOf(unlockedAccount).call()); 
+	
 
 	await usdc.methods.transfer(metamaskAccount, '100000000').send({from: unlockedAccount}); 
 	await usdc.methods.transfer(account2, '100000000').send({from: unlockedAccount}); 
