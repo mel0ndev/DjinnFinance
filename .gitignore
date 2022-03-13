@@ -1,4 +1,6 @@
 node_modules
 node_modules/
 ./vapp/node_modules/
-
+.env
+./test/liveSetup.js
+.gitignore

@@ -12,7 +12,11 @@
 				>
 					<h3> Coming Soon </h3>
 					<br>
-					<p class="subtext"> Dai strategy by Coasey </p>
+					<a class="link" target="_blank" href="https://twitter.com/CoaseyX">
+						<p class="subtext">
+							Dai strategy by <u> Coasey </u>
+						</p>
+					</a> 
 
 				</v-card> 
 			</v-col>
@@ -261,16 +265,17 @@ export default {
 	},
 	methods: {
 		onApproveVault() {
-			this.drizzleInstance.contracts['Usdc'].methods['approve'].cacheSend(this.vault, maxApprove, {from: this.user});
+			this.drizzleInstance.contracts['Usdc'].methods['approve'].cacheSend(this.vault, maxApprove, {from: this.activeAccount});
 		},
 
-		onDeposit() {
-			this.drizzleInstance.contracts['DjinnBottleUSDC'].methods['deposit'].cacheSend(this.value * 1e6); 
+		 onDeposit() {
+			this.drizzleInstance.contracts['DjinnBottleUSDC'].methods['deposit'].cacheSend(this.value * 1e6, {from: this.activeAccount}); 
 		}, 
 
 		onWithdraw() {
-			this.drizzleInstance.contracts['DjinnBottleUSDC'].methods['withdraw'].cacheSend(this.value * 1e8); 
+			this.drizzleInstance.contracts['DjinnBottleUSDC'].methods['withdraw'].cacheSend(this.value * 1e8, {from: this.activeAccount}); 
 		},
+
 
 		loadTVL() {
 			this.drizzlIenstance.contracts['DjinnBottleUSDC'].methods['balance'].cacheCall(); 
@@ -377,6 +382,11 @@ export default {
 
 .coinImage {
 	padding-top: 10px; 
+}
+
+.link {
+	text-decoration: none !important;  
+	color: black !important; 
 }
 
 </style> 

@@ -11,7 +11,6 @@ contract DjinnBottleUSDC is ERC20 {
 	IERC20 public usdc;
 	uint private constant PROTOCOL_FEE = 100; 
 	address public PROTOCOL_TREASURY; //the protocol collects 1% USDC deposits and 1% yield bearing assets
-	address public autoHarvester; //a contract that receives funds and uses them to harvest the vault every ~30 mins (runs on server)   
 
 	bool public isPaused; 
 	bool public isInitialized; 
@@ -46,11 +45,12 @@ contract DjinnBottleUSDC is ERC20 {
 
 	function deposit(uint amount) external {
 		require(isPaused == false, "deposits are not allowed at this time"); 
+		require(amount > 0, "cannot deposit 0"); 
+
 		usdc.transferFrom(msg.sender, address(this), amount); 		
 
 		uint feeAmount = (amount * PROTOCOL_FEE) / 1e4;  //1% deposit fee 
 		uint newAmount = amount - feeAmount;
-		uint shareAmount = (newAmount * totalSupply()) / 1e8; 
 
 		//send to strategy contract 
 		usdc.transfer(address(deltaNeutral), newAmount); 
@@ -78,7 +78,7 @@ contract DjinnBottleUSDC is ERC20 {
 	}	
 
 	function harvest() external {
-		require(msg.sender == admin || msg.sender == autoHarvester, "!harvest"); 
+		require(msg.sender == admin || msg.sender == PROTOCOL_TREASURY, "!harvest"); 
 		deltaNeutral.harvest(); 
 	}
 

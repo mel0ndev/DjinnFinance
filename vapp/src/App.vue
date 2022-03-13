@@ -113,7 +113,7 @@ export default {
 }
 
 .imgWrapper {
-	padding-top: 10px; 
+	padding-top: 3px; 
 	display: inline-block; 
 }
 

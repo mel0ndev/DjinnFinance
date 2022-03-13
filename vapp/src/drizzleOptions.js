@@ -1,5 +1,6 @@
 import Web3 from 'web3'; 
-const web3 = new Web3('http://127.0.0.1:8545'); 
+const web3 = new Web3(Web3.givenProvider); 
+
 import DjinnBottleUSDC from "./contracts/DjinnBottleUSDC.json"; 
 import DeltaNeutralFtmTomb from "./contracts/DeltaNeutralFtmTomb.json"; 
 import USDCABI from "../../test/abi/USDCABI.json"; 
@@ -8,7 +9,7 @@ import tombftmLPABI from "../../test/abi/tombftmLP.json";
 import tombABI from "../../test/abi/TOMBABI.json"; 
 import wftmABI from "../../test/abi/wFTMABI.json"; 
 
-
+//public addresses
 const USDCAddress = '0x04068DA6C83AFCFA0e13ba15A6696662335D5B75'; 
 const tshareRewardPool = '0xcc0a87F7e7c693042a9Cc703661F5060c80ACb43'; 
 const tombftmLP = '0x2A651563C9d3Af67aE0388a5c8F89b867038089e'; 
@@ -18,12 +19,11 @@ const wftmAddress = '0x21be370D5312f44cB42ce377BC9b8a0cEF1A4C83';
 const options = {
   web3: {
     block: false,
-    fallback: {
-      type: 'ws',
-      url: 'ws://127.0.0.1:9545'
-    }
   },
-  contracts: [DjinnBottleUSDC, DeltaNeutralFtmTomb, 
+	syncAlways: true, 
+  contracts: [
+	  DjinnBottleUSDC,
+	  DeltaNeutralFtmTomb, 
 	{
 	contractName: 'Usdc',
 	web3Contract: new web3.eth.Contract(

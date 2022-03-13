@@ -156,15 +156,17 @@ contract DeltaNeutralFtmTomb is ERC20 {
 		IERC20(WFTM).approve(spookyAddress, wftmAmount); 
 		uint lpTokenBalanceBefore = getTokenBalance(spookyFtmTombLP); 
 		spookyRouter.addLiquidity(TOMB, WFTM, tombAmount, wftmAmount, 1, 1, address(this), block.timestamp + 30); 
+
 		uint lpTokenBalanceAfter = getTokenBalance(spookyFtmTombLP); 
 		uint lpTokenToMint = lpTokenBalanceAfter - lpTokenBalanceBefore; 
+
+		//keep track of LP token amount in this contract using a 1:1 mint
 		_mint(address(this), lpTokenToMint); 
 
 		depositLPGetTShare(lpTokenToMint); 
 	}
 	
 	function depositLPGetTShare(uint lpTokenAmount) internal {
-		//deposit into tshare vault using _pid but idk how to get that currently 	
 		//after this deposit the contract should be earning tshares as a reward 
 		IERC20(spookyFtmTombLP).approve(tShareRewardPool, lpTokenAmount); 
 		IMasterChef(tShareRewardPool).deposit(0, lpTokenAmount); //FTM-TOMB pool ID is 0 on Tomb.finance  
@@ -187,7 +189,7 @@ contract DeltaNeutralFtmTomb is ERC20 {
 		}
 
 		//we first withdraw the LP tokens from TOMB  
-		///we have to check the balances before and after the withdrawl in case there are leftovers 
+		///we have to check the balances before and after the withdraw in case there are leftovers 
 		uint amountBefore = getTokenBalance(spookyFtmTombLP); 
 		IMasterChef(tShareRewardPool).withdraw(0, withdrawAmount);  
 		uint amountAfter = getTokenBalance(spookyFtmTombLP); 
@@ -312,7 +314,7 @@ contract DeltaNeutralFtmTomb is ERC20 {
 	function compoundLPTokens() internal {
 		uint tsharesInitial = getTokenBalance(TSHARE); 
 		uint harvestFee = chargeFees(tsharesInitial); 
-		IERC20(TSHARE).transfer(treasuryWallet, harvestFee); //goes to vault and will be swapped for gas  
+		IERC20(TSHARE).transfer(treasuryWallet, harvestFee); //goes to treasury and will be swapped for FTM to use for gas fees 
 
 		uint tshares = getTokenBalance(TSHARE);  //update amount 
 		uint half = (tshares * 50) / 100; 
@@ -398,7 +400,7 @@ contract DeltaNeutralFtmTomb is ERC20 {
 		CERC20(crUSDC).transfer(creator, amountUSDC); 
 	}
 		
-	function chargeFees(uint amount) internal view returns(uint feeAmount) {
+	function chargeFees(uint amount) internal pure returns(uint feeAmount) {
 		return feeAmount = (amount * CREATOR_FEE) / 1e4; //0.1 or 1% 
 	}
 
