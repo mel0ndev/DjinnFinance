@@ -4,3 +4,5 @@ node_modules/
 .env
 ./test/liveSetup.js
 .gitignore
+./dist
+./vapp/dist
