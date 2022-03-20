@@ -1,4 +1,4 @@
-//load web3 
+//load web3
 const Web3 = require('web3'); 
 const web3 = new Web3('http://127.0.0.1:8545'); 
 
@@ -23,8 +23,8 @@ const TombAddress = '0x6c021Ae822BEa943b2E66552bDe1D2696a53fbB7';
 const lpAddress = '0x2A651563C9d3Af67aE0388a5c8F89b867038089e'
 
 //contract addresses 
-const vaultAddress = '0xB4b743196f72dB42d00990E909B461a514E8057E'; 
-const shortFarmAddress = '0x8102aE0A52EC603173BC3B58b04fe802F103F59a';
+const vaultAddress = '0xC881E8a6043197e6945De917b554207F959e5e58'; 
+const shortFarmAddress = '0x133543A055DED1dC71cD06EA255C081225Bb59e6';
 
 //unlocked account 
 const unlockedAccount = "0x1a8A0255e8B0ED7C596D236bf28D57Ff3978899b";
@@ -107,7 +107,7 @@ let sender = accounts[0];
 	console.log(supply); 
 
 
-	await multiDeposit(); 
+	//await multiDeposit(); 
 	setTimeout(sleepy, 1000); 
 
 }
@@ -153,15 +153,28 @@ let sender = accounts[0];
 	let underlying = await shortFarm.methods.getUnderlying().call(); 
 	console.log(underlying); 
 
+	let ethredeem = await shortFarm.methods.ass().call();
+	console.log(ethredeem); 
+
+	let crEthTotal = await shortFarm.methods.cocks().call();
+	console.log(crEthTotal); 
+
+	console.log('--------------------------------------------'); 
+
+	let usdcredeem = await shortFarm.methods.balls().call();
+	console.log(usdcredeem); 
+
+	let crUsdcTotal = await shortFarm.methods.tits().call();
+	console.log(crUsdcTotal); 
+
+	let test = await shortFarm.methods.test().call(); 
+	console.log(test); 
+
 	let borrow = await shortFarm.methods.tokenBorrowBalance(sender).call();
 	console.log(borrow); 
 
 	let amt = await usdc.methods.balanceOf(sender).call(); 
 	console.log(amt / 1e6); 
-
-	await vault.methods.harvest().send({from: sender, gas: maxGas});  
-	console.log('Harvest complete!'); 
-
 }
 
 main(); 
